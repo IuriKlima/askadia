@@ -11,3 +11,6 @@ Domínio principal https://askadia.com.br aponta para a porta 3000. Supabase Sit
 Em 22/09/2026, o commit 746dad1 foi construído e implantado com sucesso pelo Easypanel. HTTPS / e /login responderam 200, e a API de inbox sem sessão respondeu 401. As migrações 202609220001–005 estão instaladas no Supabase; executar somente migrações posteriores em novas atualizações. Não há envio real a contatos nem publicação social nos testes.
 
 As conexões de mensagens Meta/TikTok, publicador automático e homologação de insights continuam pendentes. O calendário atual organiza datas, detalha peças, gera criativos e recebe vídeos; datas planejadas não são agendamentos de envio. Não ativar consumidores de protótipos para contornar essas dependências.
+
+## Campanhas e permissões Meta — 22/09/2026
+Commit 6189426 compilado e implantado; Easypanel registrou Success às 17:52 UTC. Migrações 202609220006–008 aplicadas com autorização explícita e RLS confirmada nas três tabelas públicas. Login HTTPS respondeu 200; campanhas e ingestão sem autenticação responderam 401. MESSAGE_CAMPAIGNS_ENABLED=true salvo após autorização específica do proprietário. Nenhuma campanha foi ativada para teste. Operação do consumidor pela interface ainda em conferência.
