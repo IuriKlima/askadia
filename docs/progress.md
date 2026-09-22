@@ -155,3 +155,5 @@ Limitações: geração mensal de peças depende da aba aberta, mas resultados c
 Dockerfile e runner de produção adicionados para Next+API, com autenticação, HTTPS e cofre obrigatórios. Worker de protótipos não é iniciado em produção. Deploy autorizado pelo usuário; registrar resultado após execução.
 
 Validação final desta etapa: pnpm check passou (145 testes em 11 arquivos, lint, tipos e builds). Navegador confirmou checkbox automático habilitado, fluxo salvo respondeu ao teste fictício sem envio, calendário exibiu 12 datas persistidas após chamada real OpenAI. Revisão dos 182 arquivos não encontrou credenciais do ambiente.
+
+Deploy confirmado em 22/09/2026: commit 746dad1 construído e implantado no Easypanel askadia/askadia; HTTPS askadia.com.br e /login 200, API inbox sem sessão 401. Domínio principal e destino 3000 configurados, variáveis privadas salvas, Supabase Site URL e callbacks ajustados. Ver docs/deploy-easypanel.md.
