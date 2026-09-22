@@ -23,9 +23,10 @@ O site público fica na raiz. O sistema usa `/login` e direciona para os context
 - Estratégia OpenAI com 12 ideias; aprovação seguida do detalhamento do calendário editorial.
 - Designer Gemini com briefing e materiais privados selecionados, controle de revisão e aprovação.
 - Conexões por empresa: fluxo OAuth Meta e criação/reutilização de instância Evolution com QR code e consulta de status.
+- Caixa de entrada WhatsApp por empresa, histórico Evolution, tela cheia, atalhos e assistência GPT-4o mini com prompt/fluxo por canal.
 - Módulos de CRM, resultados e acesso interno, com limitações e homologações descritas na documentação.
 
-Existência de código não significa homologação externa. A última tentativa real do Gemini retornou limite de quota. OAuth Meta, publicação, insights e webhooks/atendimento Evolution ainda precisam de configuração e validação. Parear WhatsApp não ativa envio ou triagem automática. Vídeos recebem roteiro; o envio do arquivo final ainda está pendente.
+Existência de código não significa homologação externa. A última tentativa real do Gemini retornou limite de quota. OAuth Meta, publicação, insights e atendimento automático por webhook Evolution ainda precisam de implementação/configuração e validação. A caixa de entrada já consulta o histórico real da Evolution; sugestões de IA/fluxo são revisadas pelo atendente antes de enviar. Parear WhatsApp não ativa envio ou triagem automática. Vídeos recebem roteiro; o envio do arquivo final ainda está pendente.
 
 ## Banco e configuração
 
@@ -58,3 +59,5 @@ Antes da publicação, preparar os serviços e a rede do container, configurar o
 - `docs`: requisitos, auditorias, contratos e acompanhamento.
 
 Consulte [requisitos](docs/askadia-requisitos.md), [auditoria](docs/askadia-auditoria.md), [andamento do produto](docs/askadia-progresso.md) e [registro de validação](docs/progress.md).
+
+Contrato da caixa, permissões e dependências: [Atendimento](docs/atendimento-caixa-entrada.md).

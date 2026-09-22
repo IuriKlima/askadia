@@ -3,8 +3,8 @@ import { serverSupabase } from '../../../../lib/auth/server';
 import { appOrigin,authConfigured } from '../../../../lib/auth/config';
 const uuid='[a-fA-F0-9-]{36}';
 const allowed:Record<string,RegExp[]>={
-GET:[new RegExp('^companies/'+uuid+'(/(channels|calendar|creatives/'+uuid+'|strategy|crm|attachments/'+uuid+'))?$'),new RegExp('^access/'+uuid+'$')],
-POST:[/^companies$/,new RegExp('^companies/'+uuid+'/(channels/meta/start|channels/meta/pages|channels/meta/select|channels/evolution/connect|channels/evolution/status|channels/disconnect|calendar/generate|calendar/edit|calendar/approve|calendar/design|answers|places|website|strategy|strategy/generate|strategy/approve|crm/contacts|crm/stage|crm/conversations|crm/mode|crm/notes|attachments/'+uuid+')$'),new RegExp('^access/'+uuid+'/meetings$')],
+GET:[new RegExp('^companies/'+uuid+'/inbox(/(threads|messages|media))?$'),new RegExp('^companies/'+uuid+'(/(channels|calendar|videos/'+uuid+'|creatives/'+uuid+'|strategy|crm|attachments/'+uuid+'))?$'),new RegExp('^access/'+uuid+'$')],
+POST:[new RegExp('^companies/'+uuid+'/inbox/(settings|quick-replies|generate-prompt|crm-sync|release|takeover|suggest|preview|send|media-send)$'),/^companies$/,new RegExp('^companies/'+uuid+'/(channels/meta/start|channels/meta/pages|channels/meta/select|channels/evolution/connect|channels/evolution/status|channels/disconnect|calendar/generate|calendar/plan-dates|calendar/date|calendar/video/'+uuid+'/'+uuid+'|calendar/edit|calendar/approve|calendar/design|answers|places|website|strategy|strategy/generate|strategy/approve|crm/contacts|crm/stage|crm/conversations|crm/mode|crm/notes|attachments/'+uuid+')$'),new RegExp('^access/'+uuid+'/meetings$')],
 };
 async function forward(request:Request,context:{params:Promise<{path:string[]}>}){
   const path=(await context.params).path.join('/');
@@ -16,14 +16,16 @@ async function forward(request:Request,context:{params:Promise<{path:string[]}>}
   if(error||!verified.user?.email_confirmed_at)return NextResponse.json({message:'Faça login para continuar.'},{status:401});
   const {data}=await client.auth.getSession();
   if(!data.session)return NextResponse.json({message:'Sessão expirada.'},{status:401});
-  const isFile=path.includes('/attachments/')||path.includes('/creatives/');
-  const body=request.method==='GET'?undefined:await request.arrayBuffer();
-  if(body&&body.byteLength>(isFile?10485760:65536))return NextResponse.json({message:'Solicitação muito grande.'},{status:413});
+  const isVideo=path.includes('/calendar/video/');
+  const isFile=isVideo||path.includes('/attachments/')||path.includes('/creatives/');
+  const maxSize=isVideo?52428800:path.endsWith('/inbox/media-send')?12*1024*1024:isFile?10485760:262144;
+  let body:Uint8Array|undefined;
+  if(request.method!=='GET'&&request.body){const reader=request.body.getReader();const chunks:Uint8Array[]=[];let size=0;try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>maxSize){await reader.cancel();return NextResponse.json({message:'Solicitação muito grande.'},{status:413});}chunks.push(part.value);}body=new Uint8Array(size);let offset=0;for(const chunk of chunks){body.set(chunk,offset);offset+=chunk.length;}}finally{reader.releaseLock();}}
   const query=new URL(request.url).search;
   try{
     const response=await fetch((process.env.API_INTERNAL_URL||'http://127.0.0.1:4000')+'/onboarding/'+path+query,{
-      method:request.method,headers:{Authorization:'Bearer '+data.session.access_token,'Content-Type':isFile?(request.headers.get('content-type')??'application/octet-stream'):'application/json','X-File-Name':request.headers.get('x-file-name')??''},
-      body,cache:'no-store',signal:AbortSignal.timeout(path.endsWith('/calendar/design')?150000:path.endsWith('/calendar/generate')?110000:path.endsWith('/strategy/generate')?60000:path.includes('/channels/')?60000:20000),
+      method:request.method,headers:{Authorization:'Bearer '+data.session.access_token,'Content-Type':isFile?(request.headers.get('content-type')??'application/octet-stream'):'application/json','X-File-Name':request.headers.get('x-file-name')??'','X-Revision':request.headers.get('x-revision')??''},
+      body:body as BodyInit|undefined,cache:'no-store',signal:AbortSignal.timeout(isVideo?120000:path.endsWith('/calendar/design')?150000:path.endsWith('/calendar/generate')?110000:path.endsWith('/strategy/generate')||path.endsWith('/calendar/plan-dates')?60000:path.includes('/channels/')||path.includes('/inbox/')?60000:20000),
     });
     if(isFile&&request.method==='GET'&&response.ok)return new Response(response.body,{status:response.status,headers:{'Content-Type':response.headers.get('content-type')??'application/octet-stream','Content-Disposition':response.headers.get('content-disposition')??'attachment','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
     return NextResponse.json(await response.json(),{status:response.status,headers:{'Cache-Control':'private, no-store'}});
