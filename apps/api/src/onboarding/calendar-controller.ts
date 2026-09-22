@@ -1,3 +1,4 @@
+import {contentPreparationConfigured} from './content-preparation';
 import {BadRequestException,Body,Controller,Get,Param,Post,Req,Res,ServiceUnavailableException,UseGuards,ForbiddenException} from '@nestjs/common';
 import {z} from 'zod';
 import {detailedPostSchema,type CalendarItem,type CreativeAsset} from '@askadia/contracts';
@@ -15,8 +16,10 @@ export class CalendarController{
   const [items,assets,brief,videos]=await Promise.all([r.actor.client.from('company_calendar_items').select('*').eq('company_id',company).order('created_at',{ascending:false}).order('position'),r.actor.client.from('company_creatives').select('*').eq('company_id',company).order('created_at',{ascending:false}),r.actor.client.from('company_strategy_briefs').select('id,generation,status,profile_version,output').eq('company_id',company).order('created_at',{ascending:false}).limit(1),r.actor.client.from('company_final_videos').select('id,item_id,revision,name,size,created_at').eq('company_id',company)]);
   for(const response of [items,assets,brief]){if(response.error?.code==='PGRST205'||response.error?.code==='42P01')throw new ServiceUnavailableException('O calendário aguarda a atualização do banco de dados (migração 007). Seus dados existentes foram preservados.');}
   const materials=result(await r.actor.client.from('onboarding_attachments').select('id,name,mime,size').eq('company_id',company).in('mime',['image/png','image/jpeg','image/webp']).order('created_at',{ascending:false}));
-  return {items:result(items) as CalendarItem[],assets:result(assets) as CreativeAsset[],current:result(brief)[0]??null,materials,videos:result(videos)};
+  const preparation=result(await r.actor.client.from('company_content_preparations').select('id,status,stage,error,updated_at,profile_version').eq('company_id',company).order('profile_version',{ascending:false}).limit(1));
+  return {preparation:preparation[0]??null,automaticAvailable:contentPreparationConfigured(),items:result(items) as CalendarItem[],assets:result(assets) as CreativeAsset[],current:result(brief)[0]??null,materials,videos:result(videos)};
  }
+ @Post('calendar/prepare') async prepare(@Req() r:AuthRequest,@Param('companyId') company:string){if(!contentPreparationConfigured())throw new ServiceUnavailableException('A preparação automática aguarda a configuração dos provedores no servidor.');return result(await r.actor.client.rpc('enqueue_content_preparation',{p_company_id:id(company)}));}
  @Post('calendar/generate') async details(@Req() r:AuthRequest,@Param('companyId') company:string,@Body() body:unknown){
   const input=parse(requestSchema,body);if(!process.env.OPENAI_API_KEY)throw new ServiceUnavailableException('Configure a OpenAI para detalhar o calendário.');
   const context=result<DetailContext>(await r.actor.client.rpc('start_content_run',{p_company_id:id(company),p_request_id:input.requestId,p_kind:'details'}));
