@@ -1,4 +1,6 @@
 'use client';
+import {CampaignsPanel} from './campaigns-panel';
+import {ManagementIntegration} from './management-integration';
 import {CompanyChannels} from './company-channels';
 
 import Link from 'next/link';
@@ -42,9 +44,10 @@ export function CompanyJourney({company,area,actions,email,calendarDay}:{calenda
    {area==='crm'&&<CrmPanel companyId={company.id} inbox={false} write={actions.includes('crm.write')}/>}
    {area==='atendimento'&&<InboxPanel key={company.id} companyId={company.id} companyName={company.name}/>}
    {area==='configuracao-atendimento'&&<AttendanceSettings key={company.id} companyId={company.id} companyName={company.name}/>}
-   {area==='campanhas'&&<section className={styles.moduleCard}><h2>Briefing de aquisição</h2><p>Público: {data?.confirmedProfile?.facts.audience?.value??'Perfil ainda não confirmado'}</p><p>Objetivo: {data?.confirmedProfile?.facts.objective?.value??'Não informado'}</p><p>Orçamento informado: {data?.confirmedProfile?.facts.budget?.value??'Não informado'}</p><span className="tag">Integração não conectada</span><p>A OpenAI prepara a proposta. Para veicular anúncios, faltam as conexões Meta Ads ou Google Ads e a aprovação de verba e versão pelo responsável autorizado.</p><Link className="button button-outline" href={base+'/estrategia'}>Preparar estratégia e proposta</Link></section>}
+   {area==='campanhas'&&<CampaignsPanel key={company.id} companyId={company.id} profile={data?.confirmedProfile} crm={actions.includes('crm.read')}/>}
+
    {area==='site'&&<section className={styles.moduleCard}><h2>Site e presença digital</h2><p>{data?.state.facts.channels?.value??'Site e canais não informados.'}</p><span className="tag">Publicação indisponível</span><p>Os canais informados no perfil orientam a criação. A conversa permite consultar o site por IA e confirmar sugestões. Hospedagem e publicação ainda dependem de implementação e configuração; nenhum endereço foi conectado automaticamente.</p><Link className="button button-outline" href={base+'/perfil'}>Atualizar canais e necessidade de site</Link></section>}
-   {area==='integracoes'&&<CompanyChannels key={company.id} companyId={company.id}/>}
+   {area==='integracoes'&&<><CompanyChannels key={company.id} companyId={company.id}/><ManagementIntegration key={'management-'+company.id} companyId={company.id} owner={billing}/></>}
    {area==='integracoes'&&<section className={styles.moduleCard}><h2>Dependências por ação</h2><table><thead><tr><th>Serviço</th><th>Situação</th><th>Uso</th></tr></thead><tbody><tr><td>OpenAI</td><td>{data?.provider.mode==='configured'?'Credencial no servidor · uso sujeito a limite':'Configuração pendente'}</td><td>Interpretação do onboarding; estratégia e campanhas em evolução</td></tr><tr><td>Nano Banana Pro</td><td>Homologação da geração pendente</td><td>Design de publicações</td></tr><tr><td>Google Places</td><td>Consulte a disponibilidade na conversa</td><td>Localização e concorrentes, com alternativa manual</td></tr><tr><td>Meta Ads / Google Ads</td><td>Conta não conectada</td><td>Execução e resultados de anúncios aprovados</td></tr><tr><td>Sistema de gestão</td><td>{data?.state.facts.management?.value??'Não informado'}</td><td>Matrículas e resultados financeiros</td></tr></tbody></table><p>As pendências afetam apenas as ações que dependem de cada serviço.</p></section>}
    </>}
   </main></div>

@@ -1,3 +1,6 @@
+import {ManagementController,ManagementIngestionController} from './campaigns/management';
+import {CampaignsController} from './campaigns/controller';
+import {CampaignDelivery} from './campaigns/delivery';
 import {InboxAutomation} from './inbox/automation';
 import {InboxController} from './inbox/controller';
 import { ChannelsController } from './onboarding/channels';
@@ -18,7 +21,7 @@ export class HealthController {
 }
 @Module({
   imports:[DashboardModule],
-  controllers:[InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
-  providers:[InboxAutomation,IdentityService,AuthService,AuthGuard,{provide:AUTH_CONFIG,useFactory:()=>({url:process.env.SUPABASE_URL,key:(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY)})}],
+  controllers:[ManagementController,ManagementIngestionController,CampaignsController,InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
+  providers:[CampaignDelivery,InboxAutomation,IdentityService,AuthService,AuthGuard,{provide:AUTH_CONFIG,useFactory:()=>({url:process.env.SUPABASE_URL,key:(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY)})}],
 })
 export class AppModule {}

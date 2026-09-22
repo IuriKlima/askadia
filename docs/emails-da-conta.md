@@ -36,3 +36,7 @@ O layout usa tabelas de apresentação e estilos inline; não depende de JavaScr
 Convites de membros de empresas atualmente geram um link no módulo Equipe. Eles não são enviados pelo Supabase Auth; o template invite não transforma esses links em e-mails automaticamente. Avisos de cobrança e marketing não estão incluídos nesta alteração.
 
 Referências: https://supabase.com/docs/guides/auth/auth-email-templates e https://supabase.com/docs/guides/auth/auth-smtp. Restrição de personalização em projetos gratuitos com SMTP padrão: https://supabase.com/changelog/46599-changes-to-email-template-customisation-on-free-tier.
+
+## Resend escolhido pelo proprietário
+Em 22/09/2026 o proprietário escolheu configurar o Resend. Cadastro/login está aguardando conclusão na aba do navegador. A configuração planejada é remetente Askadia <conta@askadia.com.br>, domínio verificado no Resend e SMTP próprio no Supabase. A integração oficial Resend/Supabase pode preencher o SMTP, mediante autorização de acesso; a alternativa é SMTP manual. Ainda não há credencial de envio instalada nem domínio verificado nesta etapa.
+Fontes: https://resend.com/docs/send-with-smtp e https://supabase.com/partners/resend.
