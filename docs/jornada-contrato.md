@@ -13,7 +13,7 @@
 - Resultados do Google são consultados ao vivo; persistir somente place IDs e dados fornecidos pelo usuário. Sem cache indevido de conteúdo Places.
 
 ## Navegação
-Raiz pública /; autenticação /login; resolução de contexto /entrada; gestão de negócios /workspace; jornada por empresa /empresa/[id]. Dentro da empresa: Início; Planejamento (Agentes, Estratégia); Conteúdo (acervo existente); Aquisição (CRM autorizado); Resultados (dashboard existente); Empresa (perfil/marca, equipe e assinatura quando autorizado). Recursos ainda ausentes mostram dependência real no contexto, sem páginas vazias. Admin /admin e acompanhamento /acompanhamento/carteira continuam separados; /operacao/[sessão] conserva operador real.
+Raiz pública /; autenticação /login; resolução de contexto /entrada; gestão de negócios /workspace; jornada por empresa /empresa/[id]. Dentro da empresa: Início; Planejamento (Estratégia, com acesso à conversa de onboarding); Conteúdo (calendário, estúdio e aprovações); Aquisição (campanhas, CRM, caixa de entrada e configuração do atendimento); Resultados (dashboard existente); Empresa (perfil/marca, equipe e assinatura quando autorizado). Recursos ainda ausentes mostram dependência real no contexto, sem páginas vazias. Admin /admin e acompanhamento /acompanhamento/carteira continuam separados; /operacao/[sessão] conserva operador real.
 
 ## Matriz de permissões
 | Perfil | Entrada | Perfil/onboarding | CRM | Assinatura | Aprovação |

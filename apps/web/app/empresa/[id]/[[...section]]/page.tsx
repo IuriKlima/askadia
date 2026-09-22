@@ -12,6 +12,7 @@ export default async function CompanyPage({params}:{params:Promise<{id:string;se
  const {data:cap,error}=await client.rpc('company_capabilities',{p_company_id:id});
  if(error||!cap?.actions?.includes(permissions[area])||(area==='configuracao-atendimento'&&!cap?.actions?.includes('crm.read')))return <main className="internal-shell"><section className="panel internal-empty"><h1>Acesso indisponível.</h1><p>Seu perfil não permite abrir esta área ou o vínculo não está mais ativo.</p><Link className="button button-outline" href="/entrada">Trocar contexto</Link></section></main>;
  const {data:company}=await client.from('companies').select('id,name').eq('id',id).is('archived_at',null).maybeSingle();if(!company)notFound();
+ if(area==='agentes')redirect('/empresa/'+id+'/estrategia');
  if(area==='inicio'&&!cap.actions.includes('marketing.read'))redirect('/empresa/'+id+'/atendimento');
  return <CompanyJourney key={id+':'+area} company={company} area={area} calendarDay={day} actions={cap.actions} email={auth.user.email??''}/>;
 }

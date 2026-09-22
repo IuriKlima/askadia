@@ -11,7 +11,7 @@ describe('Dashboard PostgreSQL authorization, audit and revisions',()=>{
  beforeAll(async()=>{
   db=new PGlite();
   await db.exec(`
-   create role anon nologin;create role authenticated nologin;
+   create role anon nologin;create role authenticated nologin;create role service_role nologin bypassrls;
    create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}');
    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
    grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;

@@ -12,7 +12,7 @@
     "build": "pnpm build:packages && pnpm --filter @askadia/api build && pnpm --filter @askadia/worker build && pnpm --filter @askadia/web build",
     "typecheck": "pnpm build:packages && pnpm -r typecheck",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers=2",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

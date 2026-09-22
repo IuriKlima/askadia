@@ -1,7 +1,7 @@
 import {generateStrategy} from './strategy';
 import { BadRequestException, ServiceUnavailableException, Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
-import { beginCompanySchema,normalizePhone,guidedAnswers,onboardingReplySchema,profilePatchSchema,type OnboardingSnapshot,type PlaceSearchResult } from '@askadia/contracts';
+import { strategyOutputSchema,beginCompanySchema,normalizePhone,guidedAnswers,onboardingReplySchema,profilePatchSchema,type OnboardingSnapshot,type PlaceSearchResult } from '@askadia/contracts';
 import { AuthGuard,type AuthRequest,type AuthenticatedActor } from '../identity/auth';
 import { result } from '../identity/service';
 import { extractWebsite,publicWebsiteUrl,interpret,interpreterConfigured,places } from './providers';
@@ -34,11 +34,11 @@ export class OnboardingController {
   return {...saved,question:currentQuestion(saved),provider:{...current.provider,message:providerMessage}};
  }
  @Post('companies/:id/places') async search(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown):Promise<PlaceSearchResult>{
-  uuid(id);const input=parse(z.object({requestId:z.uuid(),kind:z.enum(['location','competitors'])}).strict(),body);await capability(req.actor,id,'marketing.write');const current=await snapshot(req.actor,id);
+  uuid(id);const input=parse(z.object({requestId:z.uuid(),kind:z.enum(['location','competitors']),radius:z.number().int().min(500).max(20000).default(3000)}).strict(),body);await capability(req.actor,id,'marketing.write');const current=await snapshot(req.actor,id);
   const fallback={status:'unconfigured' as const,places:[],radius:null,message:'A pesquisa automática de endereços ainda não está ativada na Askadia. Abra o Google Maps para conferir o estabelecimento e informe o endereço na conversa.'};
   if(!process.env.GOOGLE_PLACES_SERVER_KEY)return fallback;
   if(!await reserve(req.actor,id,input.requestId,'places'))return {...fallback,status:'unavailable',message:'O limite de pesquisas desta empresa ou conta foi atingido. Você pode conferir no Google Maps e continuar manualmente.'};
-  try{const found=await places(current,input.kind);await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'places',p_outcome:'completed'});return found;}catch{await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'places',p_outcome:'failed'});return {...fallback,status:'unavailable',message:'A pesquisa falhou. Nenhum resultado foi inventado. Você pode informar os dados manualmente.'};}
+  try{const found=await places(current,input.kind,input.radius);await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'places',p_outcome:'completed'});return found;}catch{await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'places',p_outcome:'failed'});return {...fallback,status:'unavailable',message:'A pesquisa falhou. Nenhum resultado foi inventado. Você pode informar os dados manualmente.'};}
  }
  @Post('companies/:id/website') async website(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown){
   uuid(id);const input=parse(z.object({url:z.string().max(2000),requestId:z.uuid()}).strict(),body);await capability(req.actor,id,'marketing.write');try{publicWebsiteUrl(input.url);}catch{throw new BadRequestException('Informe um site público HTTPS sem credenciais, porta ou parâmetros.');}
@@ -47,16 +47,17 @@ export class OnboardingController {
  }
  @Post('companies/:id/strategy') async strategy(@Req() req:AuthRequest,@Param('id') id:string){return result(await req.actor.client.rpc('prepare_company_strategy',{p_company_id:uuid(id)}));}
  @Post('companies/:id/strategy/generate') async generate(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown){
-  uuid(id);const input=parse(z.object({requestId:z.uuid()}).strict(),body);await capability(req.actor,id,'marketing.write');
+  uuid(id);const input=parse(z.object({requestId:z.uuid(),feedback:z.string().trim().max(3000).default(''),month:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional()}).strict(),body);await capability(req.actor,id,'marketing.write');
   if(!process.env.OPENAI_API_KEY||!process.env.OPENAI_MODEL_STRATEGY)throw new ServiceUnavailableException('Configure OpenAI e o modelo de estratégia no servidor.');
   const brief=result<{facts:OnboardingSnapshot['state']['facts']}>(await req.actor.client.rpc('start_company_strategy',{p_company_id:id,p_request_id:input.requestId}));
   let output:Awaited<ReturnType<typeof generateStrategy>>;
-  try{output=await generateStrategy(brief.facts);}catch{
+  try{const today=new Date();if(today.getDate()>7){today.setDate(1);today.setMonth(today.getMonth()+1);}const month=input.month??today.toISOString().slice(0,7);result(await req.actor.client.rpc('strategy_feedback',{p_company_id:id,p_request:input.requestId,p_feedback:input.feedback}));output=await generateStrategy(brief.facts,input.feedback,month);}catch{
    await req.actor.client.rpc('finish_company_strategy',{p_company_id:id,p_request_id:input.requestId,p_output:null,p_model:process.env.OPENAI_MODEL_STRATEGY,p_response_id:null});await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'strategy',p_outcome:'failed'});throw new ServiceUnavailableException('A geração não retornou uma proposta válida. O briefing continua salvo. Tente novamente.');
   }
   const saved=result(await req.actor.client.rpc('finish_company_strategy',{p_company_id:id,p_request_id:input.requestId,p_output:output.output,p_model:output.model,p_response_id:output.responseId}));
   await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'strategy',p_outcome:'completed',p_usage:output.usage});return saved;
  }
+ @Post('companies/:id/strategy/edit') async editStrategy(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown){const input=parse(z.object({id:z.uuid(),generation:z.number().int().positive(),output:strategyOutputSchema}).strict(),body);return result(await req.actor.client.rpc('edit_company_strategy',{p_company_id:uuid(id),p_id:input.id,p_generation:input.generation,p_output:input.output}));}
  @Post('companies/:id/strategy/approve') async approve(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown){const input=parse(z.object({briefId:z.uuid(),generation:z.number().int().positive()}).strict(),body);return result(await req.actor.client.rpc('approve_company_strategy',{p_company_id:uuid(id),p_brief_id:input.briefId,p_generation:input.generation}));}
  @Get('companies/:id/strategy') async strategies(@Req() req:AuthRequest,@Param('id') id:string){await capability(req.actor,uuid(id),'marketing.read');return result(await req.actor.client.from('company_strategy_briefs').select('*').eq('company_id',id).order('created_at',{ascending:false}).limit(10));}
  @Get('companies/:id/crm') async crm(@Req() req:AuthRequest,@Param('id') id:string){await capability(req.actor,uuid(id),'crm.read');const [contacts,opportunities,conversations,notes,links]=await Promise.all([req.actor.client.from('contacts').select('*').eq('company_id',id).order('created_at',{ascending:false}).limit(1000),req.actor.client.from('opportunities').select('*').eq('company_id',id).order('created_at',{ascending:false}).limit(1000),req.actor.client.from('company_conversations').select('*').eq('company_id',id).order('updated_at',{ascending:false}).limit(200),req.actor.client.from('company_conversation_notes').select('*').eq('company_id',id).order('created_at',{ascending:false}).limit(200),req.actor.client.from('company_contact_channels').select('contact_id,remote_id,last_message_at,last_preview').eq('company_id',id).order('last_message_at',{ascending:false}).limit(1000)]);return {contacts:result(contacts),opportunities:result(opportunities),conversations:result(conversations),notes:result(notes),links:result(links).map((l:{contact_id:string;remote_id:string;last_message_at:string;last_preview:string})=>({contactId:l.contact_id,thread:Buffer.from(l.remote_id).toString('base64url'),time:l.last_message_at,preview:l.last_preview}))};}
