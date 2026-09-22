@@ -157,3 +157,8 @@ Dockerfile e runner de produção adicionados para Next+API, com autenticação,
 Validação final desta etapa: pnpm check passou (145 testes em 11 arquivos, lint, tipos e builds). Navegador confirmou checkbox automático habilitado, fluxo salvo respondeu ao teste fictício sem envio, calendário exibiu 12 datas persistidas após chamada real OpenAI. Revisão dos 182 arquivos não encontrou credenciais do ambiente.
 
 Deploy confirmado em 22/09/2026: commit 746dad1 construído e implantado no Easypanel askadia/askadia; HTTPS askadia.com.br e /login 200, API inbox sem sessão 401. Domínio principal e destino 3000 configurados, variáveis privadas salvas, Supabase Site URL e callbacks ajustados. Ver docs/deploy-easypanel.md.
+
+## E-mails da conta — 22/09/2026
+Preparados 13 modelos HTML em português com logo textual, cores e tipografia da Askadia, layout por tabelas, estilos inline e fallback de links. Gerador único em scripts/build-account-emails.mjs e configuração dos assuntos/avisos em supabase/templates/auth-config.json. Prévia desktop e 390 px conferida. Painel Supabase confirmou bloqueio de personalização sem SMTP próprio; credencial Resend/remetente ausentes. Configuração remota e entrega continuam pendentes do provedor e domínio verificado; nenhum e-mail real enviado. Documentação: docs/emails-da-conta.md.
+
+Validação dos modelos: geração consistente dos 13 HTMLs, variáveis e links de autenticação preservados; pnpm check passou (145 testes, lint, tipos e builds). Envio real e aplicação remota não executados, pendentes de SMTP próprio.
