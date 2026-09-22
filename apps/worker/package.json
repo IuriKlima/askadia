@@ -1,0 +1,21 @@
+{
+  "name": "@askadia/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@askadia/contracts": "workspace:*",
+    "bullmq": "^5.60.0",
+    "ioredis": "^5.8.0",
+    "zod": "^4.1.0",
+    "dotenv": "^17.2.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0"
+  }
+}

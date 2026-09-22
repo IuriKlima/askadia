@@ -1,0 +1,1 @@
+export default function Loading() { return <div className="loading-screen" role="status"><span className="brand-mark">a</span><p>Preparando seu espaço…</p></div>; }

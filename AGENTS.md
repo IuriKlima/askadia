@@ -1,0 +1,13 @@
+# Regras do projeto
+- Leia docs/askadia-requisitos.md, docs/askadia-auditoria.md e docs/askadia-progresso.md antes de alterar o sistema. O prompt mestre de 21/09/2026 substitui conflitos dos documentos anteriores.
+- Inspecione arquivos e mudanças existentes. Preserve o que funciona.
+- Trabalhe por etapas revisáveis do blueprint; documente protótipos separadamente de funcionalidades completas.
+- Nunca apresente dados simulados como reais. Protótipos locais devem permanecer identificados.
+- Verifique empresa e permissões no servidor e no banco ao implementar operações empresariais. Filtragem no frontend não é autorização.
+- Segredos somente em ambiente/cofre; .env.example deve conter apenas nomes e valores fictícios.
+- APIs externas atrás de adaptadores. Sem acesso real, registre a homologação pendente.
+- Aprovações vinculadas a versões. Mudanças invalidam aprovação.
+- Não publique conteúdo, envie mensagens reais ou ative anúncios em testes.
+- Não execute deploy de produção, merge ou migração destrutiva sem autorização correspondente.
+- Teste os riscos específicos da alteração; execute pnpm check e atualize docs/progress.md.
+- Relate o que funciona, validação executada, limitações e próxima etapa.

@@ -1,0 +1,139 @@
+# Progresso — 21/09/2026
+
+> Registro histórico da primeira implementação. O prompt mestre recebido posteriormente e o estado atual estão em `askadia-requisitos.md`, `askadia-progresso.md` e `askadia-aceite.md`. Esses documentos substituem conflitos abaixo, incluindo acesso operacional do proprietário e ordem das etapas.
+
+## Evolução pelo prompt mestre
+
+Fundação de perfis internos/carteira, sessões auditadas, planos por empresa, delegações e importação transacional de rascunhos implementadas. 53 testes passaram; homologação com contas Supabase e integrações externas permanece pendente. O arquivo `.local/askadia-update.sql` contém somente as migrações incrementais 003 e 004 e deve ser aplicado depois da instalação inicial. Os demais módulos permanecem no escopo consolidado.
+
+## Entrega atual
+Etapas 0 e 1 executáveis. A implementação da etapa 2 (identidade, empresas e acessos) foi acrescentada; homologação com Supabase real ainda pendente.
+A especificação funcional v1 do usuário foi preservada em docs/requirements-v1.md e mapeada em docs/requirements-map.md.
+
+## Disponível na prévia local
+Dashboard sem métricas fictícias, empresas em rascunho, conteúdo manual com revisão/versionamento, calendário, CRM de teste e catálogo de integrações. Rascunhos ficam no navegador e não migram automaticamente para a conta.
+
+## Nova implementação de identidade
+- /login: login, cadastro, recuperação e troca de senha via Supabase no servidor. Sem configuração, formulários ficam indisponíveis com explicação.
+- /workspace: área autenticada com workspaces, seletor de empresa por usuário, criação/edição, arquivamento e restauração.
+- Criar/restaurar empresa não ativa assinatura.
+- Gestão de membros, convite por link válido por 7 dias, aceite vinculado ao e-mail confirmado, revogação e registro de alterações.
+- Token de convite armazenado apenas como hash; link completo exibido uma vez, sem envio de e-mail.
+- Proteção do último administrador e permissões explícitas por empresa.
+- Proprietário do workspace gerencia metadados/equipe, sem acesso operacional automático.
+- Sessão em cookies HttpOnly; BFF com validação de origem, lista de rotas e cache desativado.
+- API Nest valida o token no Supabase e opera com JWT do usuário, sem service_role.
+- Políticas RLS de dados, bucket privado com prefixo da empresa e RPCs transacionais auditados.
+- Exportação autenticada e auditada do perfil da empresa; exportação CRM conectada vem em outra etapa.
+- Seleção descarta a equipe anterior e ignora respostas atrasadas da empresa anterior.
+
+## Validações executadas
+- pnpm check: passou novamente com .env configurado e correção do retorno RPC .single(), código 0 — lint, tipos e build de web/API/worker.
+- 37 testes passaram: 14 de domínio local, 9 de API/autenticação/contratos e 14 de PostgreSQL/RLS.
+- PostgreSQL real via PGlite: duas empresas no mesmo workspace e uma em outro; leitura/alteração/exportação cruzadas; membro removido; escalada direta de permissão; arquivos; convites expirados/revogados/repetidos; e-mail não confirmado; último administrador; arquivamento; FK cruzada.
+- HTTP Nest usa um adaptador de identidade controlado para provar os bloqueios de rota. Isso não é uma prova de login real no fornecedor.
+- Arquivo consolidado .local/supabase-setup.sql aplicado em PostgreSQL/PGlite: dez tabelas criadas; segunda execução bloqueada pelo preflight. Auth/Storage usam as mesmas fixtures da suíte.
+- Requisição ao servidor local GET /identity sem token: 401.
+- POST /api/auth com Origin externa: 403.
+- POST /api/auth com origem local e Supabase ausente: 503, sem sucesso simulado.
+- Build Next gerou /login, /workspace, /preview, /auth/callback, /auth/update-password e rotas API.
+- Login inspecionado no navegador a 1440×1000 e 390×844; campos bloqueados sem configuração; alternância cadastro/login verificada.
+- A revisão de banco encontrou e corrigiu conflito com o identificador SQL current_role na proteção do último admin. A suíte passou após a correção.
+- Concorrência: aquisição de locks padronizada entre aceite de convite, criação e alteração de membros; o aceite revalida o convite após o bloqueio. Teste multi-conexão ainda pendente em Supabase.
+
+## Limites reais
+- .env local configurado com URL e chave pública fornecidas; chave service_role não armazenada. Auth/settings respondeu 200, cadastro por e-mail habilitado e confirmação obrigatória. Consulta sem registros a workspaces respondeu PGRST205: tabela ausente no cache do esquema. Migrações remotas pendentes de execução pelo usuário.
+- PGlite usa fixtures de auth/storage; não prova Auth hospedado, PostgREST, SMTP, download real ou cookies com o fornecedor.
+- Fluxo completo da UI autenticada com contas reais ainda não homologado.
+- Realtime não é usado por esta interface; autorização de canais e prova de revogação ao vivo continuam pendentes.
+- Uploads e validação binária ficam na etapa de onboarding/arquivos.
+- Convites são compartilhados manualmente. Nenhum e-mail foi enviado.
+- Billing, IA, pesquisa, conteúdo multimídia, sites/domínios, anúncios e mensagens continuam pendentes.
+- Nenhuma publicação, gasto em anúncios, cobrança, DNS, deploy, merge ou migração destrutiva foi executada.
+- API/worker permanecem bloqueados para produção até homologação e decisão de lançamento.
+
+## Próxima etapa
+O usuário escolheu executar o SQL no painel. Arquivo .local/supabase-setup.sql reúne as três migrações em uma transação, com bloqueio inicial de objetos conflitantes. Aplicar e seguir docs/identity-setup.md para configurar URLs do Auth. Validar com contas reais o percurso cadastro → e-mail confirmado → workspace → duas empresas → convite → mudança/revogação → acesso negado em API/banco/arquivos.
+Após esse aceite, iniciar etapa 3: assinatura por empresa com Asaas sandbox, entitlements e reconciliação.
+
+## Sequência restante
+3. Cobrança por empresa.
+4. CRM persistente e captura/importação.
+5. Onboarding, conhecimento e arquivos.
+6–7. Pesquisa e estratégia com fontes/versões.
+8–9. Conteúdo, vídeo, site e domínio.
+10–11. Publicação e atendimento multicanal.
+12–13. Tráfego, indicadores e acompanhamento.
+14. Homologação completa e piloto.
+
+## Dashboard — etapa local de 21/09/2026
+
+Escopo independente do trabalho de fundação: reaproveitados identidade, empresas, permissões, CRM, sessão interna e componentes; protótipo /preview preservado. Sem alterações de credenciais, deploy ou execução de SQL remoto.
+
+Entregas:
+- /dashboard e /resultados, visual neutro, filtros compartilhados, 6–8 KPIs, comparação, tabelas, proteção contra resposta atrasada e memória de cálculo.
+- Importação CSV assistida e auditada com modelos vazios, fatos idempotentes, correções versionadas e cobertura declarada.
+- Motor de CAC/ROAS/ROI com centavos, ausência distinta de zero, escopos explícitos, clientes antigos excluídos, primeira aquisição pagante e estornos tardios rastreáveis.
+- Perfil confirmado para 20 candidatos editoriais e Trends por lote/região/escala, sem ranking global falso.
+- CSV/PDF privados com snapshot/metodologia e permissão financeira revalidada.
+- Migração aditiva 202609219001_dashboard.sql e adaptadores/contratos de leitura, sincronização e diagnóstico.
+
+Validação final: pnpm check passou (lint, typecheck, 91 testes em 7 arquivos e build de API/worker/web). Testes novos de dashboard cobrem finanças, períodos, corridas, CSV, Trends, temporalidade social, PostgreSQL/RLS, importação/revisões, permissões/exportações, consultas HTTP com fixtures, revogação/retry do processador e estrutura do PDF. Resultado numérico de ROI 75% confirmado. Testes não fazem chamadas reais a provedores.
+
+Navegador: /dashboard sem sessão redirecionou para /login; aba temporária de inspeção encerrada. Não houve homologação visual autenticada, móvel ou com contas externas reais.
+
+Limites: migração remota pendente; APIs não homologadas. Cofre/OAuth, normalização e persistência automática, repositório de jobs/checkpoints e ativação do consumidor ainda pendentes. Gestão não informada. Conciliação automática de CRM, fila de ambiguidades, atribuição automática, rateio por coorte, métricas individuais do atendente e IA ativa ainda não implementados. O botão Atualizar leitura consulta o banco, sem simular job externo. CSV é o caminho funcional inicial após aplicar as migrações. Permissões financeiras possuem RPC, mas a tela de equipe ainda não expõe esses controles.
+
+Próxima etapa concreta: aplicar as migrações na ordem, validar dois tenants com usuários reais e importar um relatório pequeno conciliável; depois definir fornecedor/unidade e autorizações das contas para implementar e homologar o fluxo automático. Detalhes em docs/dashboard-auditoria.md, docs/dashboard-metricas.md e docs/dashboard-integracoes.md.
+
+## Correção do cadastro — 21/09/2026
+O endpoint POST /identity/workspaces retornava o UUID como texto/html pelo Nest. O proxy web esperava JSON e exibia 503 depois de o banco já ter criado a área. Corrigido para responder {id}, com consumo correspondente na tela. Adicionado teste HTTP que falhou antes da correção (Content-Type text/html) e passou depois (201, application/json, ID correto e uma chamada à RPC). Os 10 testes de identidade/API passaram.
+Na sessão autenticada do usuário, foram encontradas duas áreas resultantes das tentativas anteriores, ambas sem empresas. Foi usada a primeira área existente para cadastrar a empresa solicitada; a interface confirmou o registro persistido como rascunho, sem contratação. A área duplicada foi preservada. Nenhuma migração foi necessária para esta correção.
+
+Validação final da correção de cadastro: `pnpm check` passou integralmente (código 0): lint, tipos, 92 testes e builds de web/API/worker. Cadastro da empresa solicitada confirmado na interface autenticada do Supabase; nenhuma cobrança ativada.
+
+## Página pública na raiz — 21/09/2026
+A rota / passa a apresentar o site institucional da Askadia, sem redirecionar automaticamente para o painel e sem carregar a prévia local. Apresentação, recursos disponíveis, evolução do produto e perguntas frequentes usam a identidade neutra existente. Todos os botões de entrada levam a /login; /workspace e demais áreas conectadas mantêm autenticação. /preview continua separado. A página pública não consulta dados privados nem depende do Supabase para renderizar. Nenhum DNS ou deploy foi alterado. Esta entrega não conclui os formulários comerciais e as demais páginas institucionais do escopo mestre.
+
+
+## Jornada por empresa — 21/09/2026
+Onboarding persistido, perfil confirmado/versionado, anexos privados, briefing/estratégia OpenAI, áreas por papel e reuniões de acompanhamento implementados. CRM e tomada humana em migração 006; execução remota ainda sem confirmação. Migração 005 executada pelo usuário. Auditoria, navegação e contrato em docs/jornada-auditoria.md e docs/jornada-contrato.md; relatório em docs/jornada-entrega.md.
+Validação: pnpm check passou (lint, tipos, 114 testes, builds); após ajustes finais de texto/Maps, tipos de API/web e 22 testes da jornada passaram. Navegador autenticado confirmou criação → conversa → recarga → etapas manuais → perfil v1 → início da mesma empresa → briefing persistido, além de PNG privado presente após recarga.
+OpenAI continuou retornando 429 sem créditos após recarga informada. Gemini Pro retornou 429 free tier com limite zero nas duas tentativas reais de imagem; nenhuma imagem gerada. Google Places/Embed sem chaves, com busca externa manual e aviso específico. Não há homologação de geração, publicação, envio WhatsApp ou cobrança.
+
+
+## Google Places — chave configurada em 21/09/2026
+Chave fornecida pelo usuário salva apenas em GOOGLE_PLACES_SERVER_KEY no .env ignorado. Consulta real ao endpoint Places Text Search retornou HTTP 403 PERMISSION_DENIED / SERVICE_DISABLED: Places API (New) está desativada no projeto associado à chave. Usuário recebeu link direto de ativação. A chave não foi exposta como chave de navegador; Maps Embed ainda depende de credencial própria restrita. API local sinalizada para recarregar ambiente. Sem alterações em dados da empresa, sem seleção/confirmacão automática de local. Não houve mudança funcional de código nem nova suíte; teste de integração real identificou bloqueio externo antes da busca.
+
+
+## Google Places ativado — 21/09/2026
+Nova consulta real com a chave de servidor já configurada retornou HTTP 200 e um estabelecimento para a busca da empresa. A ativação resolveu o SERVICE_DISABLED anterior. A nova credencial fornecida em print do Gemini foi testada no Places e retornou 401 UNAUTHENTICATED; não substituiu a chave funcional. Nenhum segredo ou conteúdo integral do Places foi salvo no relatório. GOOGLE_MAPS_BROWSER_KEY ainda ausente: mapa incorporado pendente, link externo disponível. Sem mudanças de código nesta validação de integração.
+
+
+## Atualização da chave Gemini — 21/09/2026
+Nova credencial Gemini fornecida pelo usuário salva somente no .env privado. Teste real com gemini-3-pro-image retornou novamente HTTP 429 RESOURCE_EXHAUSTED, métricas de free tier com limite zero. Nenhuma imagem gerada. A chave funcional do Google Places foi preservada. Faturamento/quota do projeto Gemini permanece como dependência externa. Sem mudanças de código; teste específico da integração executado.
+
+
+## Novo teste real OpenAI e Gemini — 2026-09-21T19:53:27.763Z
+OpenAI: interpretação estruturada de resposta fictícia concluída com sucesso; nome, cidade e tipo extraídos, 359 tokens totais (275 de entrada e 84 de saída). O bloqueio de crédito deixou de ocorrer nesse teste. Isso homologa a interpretação do onboarding; geração completa de estratégia permanece sem validação real nesta execução. Gemini Nano Banana Pro (gemini-3-pro-image): HTTP 429 RESOURCE_EXHAUSTED, métricas free tier com limite zero; nenhuma imagem gerada. Nenhum dado real de cliente enviado; sem alteração de código nesta verificação.
+
+
+## Calendário editorial, designer e conexões — 21/09/2026
+Estratégia exige 12 ideias. Aprovação materializa o calendário; OpenAI detalha somente itens pendentes. Designer Gemini recebe briefing, marca e bytes dos materiais privados selecionados (até 5 imagens/12 MB), com referência aos anexos no registro da geração. Revisões invalidam aprovação; respostas atrasadas não substituem edições. Calendário e arquivos isolados por empresa. Implementado OAuth Meta com state descartável, seleção de Página e cofre AES-GCM; Evolution procura/cria instância determinística por empresa apenas ao conectar WhatsApp e oferece QR/status. Sem consumidor de webhook, envio real, publicação ou insights sincronizados neste incremento.
+Validação completa: pnpm check passou, incluindo lint, tipos, 120 testes e builds. Testes cobrem 12 ideias, aprovação prévia, edição/revisão, mídia privada, geração atrasada, materiais, isolamento, OAuth replay e cofre. Integrações externas ainda dependem de homologação.
+Erro de Conteúdo confirmado: tabelas 007/008 ausentes (PGRST205). Usuário executou ambos os SQLs preparados, consulta posterior confirmou presença com acesso anônimo negado por permissões. Nenhum dado de empresa foi alterado por testes de navegador. App Meta Askadia Marketing (1061475423356674) criado com Instagram, Páginas e três casos de uso Marketing API; usuário autorizou aceite de termos. App antigo preservado. App ID salvo no .env; segredo, origem HTTPS, portfólio Askadia/verificação e análise Meta pendentes. Gemini: última geração real ainda 429; não afirmar design homologado.
+Contrato, permissões e instruções em docs/calendario-conexoes.md. Upload do vídeo final e consistência visual entre slides continuam pendentes.
+
+
+## Homologação de calendário/Meta/Evolution — continuação
+Calendário verificado no navegador autenticado após 007/008: quatro publicações da estratégia legada, revisões v2, legendas, briefing visual, slides/roteiros e três materiais de referência. Não houve expansão da estratégia aprovada; novos resultados exigem 12 ideias.
+Meta: usuário forneceu segredo, salvo apenas no .env; Graph v26.0 confirmado no painel. Callback HTTPS https://askadia.com.br/api/connections/meta/callback salvo e confirmado após recarga, mantendo HTTPS e modo estrito. OAuth local bloqueado até WEB_ORIGIN HTTPS para não encaminhar clientes a callback inválido. Cinco testes do adaptador passaram após esse ajuste e tipos de API passaram. App em desenvolvimento, portfólio e revisão ainda pendentes.
+Registro oficial confirmou domínio askadia.com.br ativo, DNS a.auto.dns.br/b.auto.dns.br, consulta DNS pública sem registro A. IP do host Evolution: 2.25.204.218. Usuário escolheu hospedar no mesmo Easypanel; painel aberto e aguardando autenticação. Hospedagem NÃO executada: API e worker ainda possuem bloqueios explícitos de produção que exigem revisão de lançamento; não removidos.
+Evolution: servidor 2.3.7 retorna 404 ao buscar uma instância inexistente. Corrigido para criar nesse caso, distinguir erro de credencial e reutilizar a instância existente. Testes verificam 404→criação, reutilização sem duplicação e 401 sem tentativa de criação. Sete testes do adaptador e tipos de API passaram. Validação real pela interface criou askadia-{UUID da empresa Gaviões Varginha}, persistiu vínculo pendente e exibiu QR code. Não houve leitura do QR pelo agente, envio de mensagem ou configuração de webhook.
+
+Meta (configuração no painel): adicionado conjunto obrigatório de conteúdo Instagram com Facebook Login; instagram_basic, instagram_content_publish, pages_read_engagement, pages_show_list e business_management apareceram prontos para teste. Tentativa de adicionar instagram_manage_insights retornou modal da Meta “Ocorreu um erro. Tente novamente mais tarde.”; permissão NÃO habilitada. Configuração de Login para Empresas não finalizada (nenhum config_id gerado); demais permissões Pages/insights, revisão/portfólio e homologação OAuth continuam pendentes. Painel Easypanel ainda sem sessão autenticada. Domínio público/produção não alterados.
+
+## Versionamento para hospedagem — 22/09/2026
+Repositório local inicializado em main e origin configurado para https://github.com/IuriKlima/askadia.git, que estava vazio. Primeiro snapshot reúne aplicação, contratos, migrações, documentação, testes e CI. .gitignore ampliado para excluir cache pnpm e logs; .env, .local, dependências e builds continuam excluídos. README atualizado para distinguir implementação atual, validações e dependências de produção.
+Validação antes do commit: pnpm check passou integralmente (lint, tipos, 123 testes em 9 arquivos e builds dos três aplicativos). Inspeção dos 157 arquivos preparados não encontrou valores das credenciais configuradas nem padrões comuns de chaves privadas, tokens GitHub, Google/OpenAI/Gemini ou JWTs. .env.example contém apenas placeholders e configuração pública de exemplo.
+Este registro não representa deploy. Permanecem pendentes a preparação dos serviços para containers, revisão dos bloqueios explícitos de produção, configuração segura no Easypanel, DNS/HTTPS e homologação das integrações. Nenhuma migração remota, publicação, mensagem ou campanha foi executada nesta etapa.

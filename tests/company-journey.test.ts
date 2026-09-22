@@ -1,0 +1,145 @@
+import {afterAll,beforeAll,describe,expect,it} from 'vitest';
+import {PGlite} from '@electric-sql/pglite';
+import {readFileSync,readdirSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
+import {Test} from '@nestjs/testing';
+import {AppModule} from '../apps/api/src/app';
+import {AuthService} from '../apps/api/src/identity/auth';
+import {publicWebsiteUrl} from '../apps/api/src/onboarding/providers';
+import {guidedAnswers,onboardingReplySchema,onboardingStep,type OnboardingSnapshot} from '../packages/contracts/src/onboarding';
+let db:PGlite,a:string,b:string,w:string;
+const users={owner:'40000000-0000-4000-8000-000000000001',other:'40000000-0000-4000-8000-000000000002',marketing:'40000000-0000-4000-8000-000000000003',attendant:'40000000-0000-4000-8000-000000000004',support:'40000000-0000-4000-8000-000000000005',admin:'40000000-0000-4000-8000-000000000006'};
+async function as(id:string){await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');}
+async function scalar<T>(sql:string,args:unknown[]=[]):Promise<T>{return Object.values((await db.query<Record<string,T>>(sql,args)).rows[0]!)[0]!;}
+const fact=(value:string)=>({value,status:'provided'});
+const read=(id=a)=>scalar<OnboardingSnapshot>('select public.company_onboarding_read($1)',[id]);
+async function save(patch:unknown={},action='reply',message='Resposta do cliente',id=a,request=randomUUID(),revision?:number){const current=await read(id);return scalar<OnboardingSnapshot>('select public.save_company_onboarding($1,$2,$3,$4,$5::jsonb,$6)',[id,request,revision??current.state.revision,message,JSON.stringify(patch),action]);}
+describe('Company journey: persistent transactions and authorized isolation',()=>{
+ beforeAll(async()=>{
+  db=new PGlite();await db.exec(`create role anon nologin;create role authenticated nologin;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}');create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text);alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated;`);
+  for(const file of readdirSync('supabase/migrations').filter(f=>f.endsWith('.sql')).sort())await db.exec(readFileSync('supabase/migrations/'+file,'utf8').replace('create extension if not exists pgcrypto;',''));
+  for(const [name,id] of Object.entries(users)){await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())',[id,name+'@example.test']);await db.query('insert into public.profiles(id,display_name) values($1,$2)',[id,name]);}
+  await as(users.owner);
+ },60000);
+ afterAll(async()=>{await db?.close();});
+ it('creates first workspace and draft atomically, with initial chat and no subscription charge',async()=>{
+  const request=randomUUID();const first=await scalar<{companyId:string;workspaceId:string}>('select public.begin_company_onboarding($1)',[request]);a=first.companyId;w=first.workspaceId;
+  const replay=await scalar<{companyId:string}>('select public.begin_company_onboarding($1)',[request]);const doubleClick=await scalar<{companyId:string}>('select public.begin_company_onboarding($1)',[randomUUID()]);expect(replay.companyId).toBe(a);expect(doubleClick.companyId).toBe(a);
+  const s=await read();expect(s.step).toBe('identity');expect(s.state.facts).toEqual({});expect(s.messages).toHaveLength(1);expect(s.messages[0]?.body).toContain('nome do negócio');expect((s.capabilities as {subscription:{status:string}}).subscription.status).toBe('draft');
+ });
+ it('persists multiple facts and resumes exact step across independent reads',async()=>{
+  const answers=guidedAnswers('identity','Movimento em Varginha');const s=await save({...answers,businessType:fact('Academia')});expect(s.step).toBe('location');expect(s.state.facts.city?.value).toBe('Varginha');expect((await read()).state).toEqual(s.state);expect(onboardingStep(s.state)).toBe(s.step);
+ });
+ it('replays a request safely and rejects stale device writes without overwriting',async()=>{
+  const nonce=randomUUID(),old=(await read()).state.revision;const first=await save({address:fact('Centro, Varginha')},'reply','Endereço informado',a,nonce,old);
+  const duplicate=await save({address:fact('Conteúdo atrasado')},'reply','Resposta atrasada',a,nonce,old);expect(duplicate.state.revision).toBe(first.state.revision);expect(duplicate.state.facts.address?.value).toBe('Centro, Varginha');await expect(save({address:fact('Outro local')},'reply','Outra sessão',a,randomUUID(),old)).rejects.toThrow('Profile changed');
+ });
+ it('requires location before competitors and references; manual fallback does not invent competitors',async()=>{
+  await expect(save({},'review_competitors')).rejects.toThrow('Confirm location first');await expect(save({},'review_references')).rejects.toThrow('Review local competitors first');
+  expect((await save({},'confirm_location')).step).toBe('competitors');expect((await save({competitors:{status:'deferred',value:null}},'review_competitors')).step).toBe('references');expect((await save({references:{status:'unknown',value:null}},'review_references')).step).toBe('services');
+ });
+ it('requires essential facts but allows missing assets, integrations and complementary answers',async()=>{
+  await expect(save({},'confirm')).rejects.toThrow('Missing essential');const s=await save({services:fact('Musculação e funcional'),audience:fact('Adultos iniciantes'),objective:fact('Atrair 20 visitas por mês')});expect(s.step).toBe('structure');const complete=await save({},'confirm');expect(complete.step).toBe('complete');expect(complete.confirmedProfile?.version).toBe(1);expect(complete.confirmedProfile?.facts.brand).toBeUndefined();expect(complete.confirmedProfile?.facts.name?.source).toBe('user');
+ });
+ it('strategy preparation is persisted and idempotent, using the confirmed company profile',async()=>{
+  const one=await scalar<{id:string;facts:unknown;profile_version:number}>('select public.prepare_company_strategy($1)',[a]);const two=await scalar<{id:string}>('select public.prepare_company_strategy($1)',[a]);expect(two.id).toBe(one.id);expect(one.profile_version).toBe(1);expect(one.facts).toEqual((await read()).confirmedProfile?.facts);
+ });
+ it('future edits preserve confirmed versions, flag strategy review and reconfirm a new version',async()=>{
+  await save({objective:fact('Atrair 30 visitas por mês')},'edit');expect((await read()).confirmedProfile?.facts.objective?.value).toBe('Atrair 20 visitas por mês');await expect(scalar('select public.prepare_company_strategy($1)',[a])).rejects.toThrow();await save({},'confirm');expect((await read()).confirmedProfile?.version).toBe(2);expect(await scalar("select count(*)::int from public.company_profile_impacts where company_id=$1",[a])).toBe(1);expect(await scalar('select status from public.company_strategy_briefs where company_id=$1',[a])).toBe('superseded');
+ });
+ it('second company has an independent chat and rejects delayed cross-company context',async()=>{
+  const created=await scalar<{companyId:string}>('select public.begin_company_onboarding($1,$2)',[randomUUID(),w]);b=created.companyId;expect(b).not.toBe(a);expect((await read(b)).state.facts).toEqual({});expect((await read(b)).messages).toHaveLength(1);await expect(save({name:fact('Vazamento')},'reply','Resposta antiga',b,randomUUID(),(await read(a)).state.revision)).rejects.toThrow('Profile changed');
+ });
+ it('existing businesses start with their previous metadata and do not repeat supplied answers',async()=>{
+  const company=await scalar<{id:string}>("select row_to_json(public.create_company($1,'Estúdio Existente','studio','São Paulo','America/Sao_Paulo'))",[w]);const s=await read(company.id);expect(s.step).toBe('location');expect(s.state.facts.name?.source).toBe('existing');
+ });
+ it('enforces read/write boundaries on RPC and tables for unrelated users and attendants',async()=>{
+  await db.exec('reset role');await db.query("insert into public.company_members(company_id,user_id,role) values($1,$2,'marketing'),($1,$3,'attendant')",[a,users.marketing,users.attendant]);
+  for(const user of [users.other,users.attendant]){await as(user);await expect(read()).rejects.toThrow('Access denied');expect((await db.query('select * from public.onboarding_messages')).rows).toHaveLength(0);await expect(scalar('select public.begin_company_onboarding($1,$2)',[randomUUID(),w])).rejects.toThrow();}
+  await as(users.marketing);expect((await read()).state.company_id).toBe(a);await expect(read(b)).rejects.toThrow('Access denied');await expect(db.query("update public.company_profile_versions set facts='{}' where company_id=$1",[a])).rejects.toThrow();
+ });
+ it('stores private attachments with company-bound paths and denies metadata for nonexistent/cross-tenant files',async()=>{
+  const id=randomUUID(),path=a+'/onboarding/'+id+'.png';await db.query("insert into storage.objects(bucket_id,name) values('company-assets',$1)",[path]);const attachment=await scalar<{id:string}>('select public.record_onboarding_attachment($1,$2,$3,$4,$5,$6)',[a,id,'logo.png','image/png',128,path]);expect(attachment.id).toBe(id);expect((await read()).attachments).toHaveLength(1);await expect(scalar('select public.record_onboarding_attachment($1,$2,$3,$4,$5,$6)',[b,randomUUID(),'other.png','image/png',128,path])).rejects.toThrow();await expect(scalar('select public.record_onboarding_attachment($1,$2,$3,$4,$5,$6)',[a,randomUUID(),'missing.png','image/png',128,a+'/onboarding/missing.png'])).rejects.toThrow();
+ });
+ it('enforces disabled allowances, daily ceilings and duplicate usage prevention',async()=>{
+  await db.exec('reset role');await db.query("update public.onboarding_provider_limits set daily_calls=0 where company_id=$1 and kind='interpretation'",[a]);await as(users.marketing);
+  expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,randomUUID(),'interpretation'])).toBe(false);await db.exec('reset role');await db.query("update public.onboarding_provider_limits set daily_calls=1 where company_id=$1 and kind='interpretation'",[a]);await as(users.marketing);const request=randomUUID();expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,request,'interpretation'])).toBe(true);expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,request,'interpretation'])).toBe(false);expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,randomUUID(),'interpretation'])).toBe(false);
+ });
+ it('revocation immediately blocks chat, files and RPC even with the previous session identity',async()=>{
+  await as(users.owner);await scalar('select public.change_company_member($1,$2,null)',[a,users.marketing]);await as(users.marketing);await expect(read()).rejects.toThrow('Access denied');expect((await db.query('select * from public.onboarding_attachments')).rows).toHaveLength(0);expect((await db.query('select * from storage.objects')).rows).toHaveLength(0);
+ });
+ it('internal meetings are assigned, audited, idempotent and revoked with the portfolio',async()=>{
+  await db.exec('reset role');await db.query("insert into public.platform_staff(user_id,role) values($1,'platform_admin'),($2,'support')",[users.admin,users.support]);await as(users.admin);await scalar('select public.set_company_assignment($1,$2,true)',[a,users.support]);await as(users.support);await expect(scalar('select public.start_internal_access($1,$2)',[b,'Fora da carteira'])).rejects.toThrow('Access denied');const session=await scalar<string>('select public.start_internal_access($1,$2)',[a,'Encontro com cliente']);const nonce=randomUUID();const args=[session,nonce,'2026-09-21','Cliente Ana e consultor','Revisar objetivo de visitas','Ana: enviar fotos até sexta'];const first=await scalar<{id:string}>('select public.record_followup_meeting($1,$2,$3,$4,$5,$6)',args);expect((await scalar<{id:string}>('select public.record_followup_meeting($1,$2,$3,$4,$5,$6)',args)).id).toBe(first.id);const internal=await scalar<{meetings:unknown[]}>('select public.internal_onboarding_context($1)',[session]);expect(internal.meetings).toHaveLength(1);await as(users.admin);await scalar('select public.set_company_assignment($1,$2,false)',[a,users.support]);await as(users.support);await expect(scalar('select public.internal_onboarding_context($1)',[session])).rejects.toThrow('Internal session unavailable');
+ });
+ it('generates versioned proposals, requires approval delegation and preserves previously approved output',async()=>{
+  await as(users.owner);const request=randomUUID();const draft=await scalar<{id:string;generation:number}>('select public.start_company_strategy($1,$2)',[a,request]);
+  const output={positioning:'Proposta de posicionamento',objectives:[{goal:'Visitas',metric:'Visitas agendadas',suggestedTarget:'Meta a confirmar'}],calendar:[{week:1,format:'imagem',theme:'Empresa',brief:'Apresentação',needsClientVideo:false}],ads:[],keywords:Array.from({length:20},(_,i)=>'palavra '+i),unknowns:['Orçamento']};
+  const ready=await scalar<{status:string}>('select public.finish_company_strategy($1,$2,$3,$4,$5)',[a,request,JSON.stringify(output),'test-fixture','test-response']);expect(ready.status).toBe('review');
+  await db.exec('reset role');await db.query("insert into public.company_members(company_id,user_id,role) values($1,$2,'marketing')",[a,users.marketing]);await as(users.marketing);await expect(scalar('select public.approve_company_strategy($1,$2,$3)',[a,draft.id,draft.generation])).rejects.toThrow('Approval permission required');
+  await as(users.owner);await expect(scalar('select public.approve_company_strategy($1,$2,$3)',[a,draft.id,99])).rejects.toThrow('Strategy changed');const approved=await scalar<{status:string}>('select public.approve_company_strategy($1,$2,$3)',[a,draft.id,draft.generation]);expect(approved.status).toBe('approved');
+  const next=randomUUID();await scalar('select public.start_company_strategy($1,$2)',[a,next]);expect(await scalar('select output from public.company_strategy_history where brief_id=$1 and generation=$2',[draft.id,draft.generation])).toEqual(output);
+  await save({objective:fact('Novo objetivo confirmado depois')},'edit');const late=await scalar<{status:string}>('select public.finish_company_strategy($1,$2,$3,$4,$5)',[a,next,JSON.stringify(output),'test-fixture','test-response-2']);expect(late.status).toBe('superseded');await expect(scalar('select public.approve_company_strategy($1,$2,$3)',[a,draft.id,2])).rejects.toThrow('Strategy changed');await save({},'confirm');
+ });
+ it('calendar requires strategy approval, preserves edits and isolates creatives and materials',async()=>{
+  await db.exec('reset role');await db.query("update public.onboarding_provider_limits set daily_calls=10 where company_id=$1 and kind='strategy'",[a]);await as(users.owner);const request=randomUUID();const brief=await scalar<{id:string;generation:number}>('select public.start_company_strategy($1,$2)',[a,request]);
+  const output={positioning:'Posicionamento confirmado',objectives:[{goal:'Visitas',metric:'Contatos',suggestedTarget:'Confirmar meta'}],calendar:Array.from({length:12},(_,n)=>({week:Math.floor(n/3)+1,format:'imagem',theme:'Ideia '+n,brief:'Direção '+n,needsClientVideo:false})),ads:[],keywords:Array.from({length:20},(_,i)=>'palavra '+i),unknowns:[]};
+  await scalar('select public.finish_company_strategy($1,$2,$3,$4,$5)',[a,request,JSON.stringify(output),'fixture','fixture']);
+  expect(await scalar('select count(*)::int from public.company_calendar_items where brief_id=$1',[brief.id])).toBe(0);
+  await expect(scalar('select public.start_content_run($1,$2,$3)',[a,randomUUID(),'details'])).rejects.toThrow('Approve the current strategy');
+  await scalar('select public.approve_company_strategy($1,$2,$3)',[a,brief.id,brief.generation]);await expect(scalar('select public.approve_company_strategy($1,$2,$3)',[a,brief.id,brief.generation])).rejects.toThrow('Strategy changed');
+  expect(await scalar('select count(*)::int from public.company_calendar_items where brief_id=$1',[brief.id])).toBe(12);
+  const nonce=randomUUID();const run=await scalar<{items:{id:string}[]}>('select public.start_content_run($1,$2,$3)',[a,nonce,'details']);expect(run.items).toHaveLength(12);
+  await expect(scalar('select public.start_content_run($1,$2,$3)',[a,nonce,'details'])).rejects.toThrow('Request already used');
+  const details={title:'Título',caption:'Legenda com fatos confirmados',cta:'Conheça a empresa',designBrief:'Utilizar logo e foto da empresa',hashtags:[],slides:[],videoScript:'',clientMaterials:[],unknowns:[]};
+  expect(await scalar('select public.finish_content_details($1,$2,$3,$4)',[a,nonce,JSON.stringify(run.items.map(i=>({id:i.id,details}))),'fixture'])).toEqual({status:'completed'});
+  const item=run.items[0]!.id;await expect(scalar('select public.approve_calendar_item($1,$2,$3)',[a,item,2])).rejects.toThrow('Final media required');
+  await expect(scalar('select public.start_content_run($1,$2,$3,$4,$5,$6)',[a,randomUUID(),'design',item,0,[randomUUID()]])).rejects.toThrow('Company materials required');
+  const design=randomUUID();await scalar('select public.start_content_run($1,$2,$3,$4)',[a,design,'design',item]);
+  await expect(scalar('select public.finish_content_design($1,$2,$3,$4)',[a,design,'image/png','fixture'])).rejects.toThrow('Upload creative first');
+  await db.query("insert into storage.objects(bucket_id,name) values('company-assets',$1)",[a+'/generated/'+design+'.png']);await scalar('select public.finish_content_design($1,$2,$3,$4)',[a,design,'image/png','fixture']);
+  await scalar('select public.approve_calendar_item($1,$2,$3)',[a,item,2]);const late=randomUUID();await scalar('select public.start_content_run($1,$2,$3,$4)',[a,late,'design',item]);
+  await scalar('select public.edit_calendar_item($1,$2,$3,$4,$5)',[a,item,2,JSON.stringify({...details,caption:'Edição humana'}),null]);
+  expect(await scalar('select approved_revision from public.company_calendar_items where id=$1',[item])).toBeNull();
+  expect(await scalar('select public.finish_content_design($1,$2,$3,$4)',[a,late,'image/png','fixture'])).toEqual({status:'stale'});
+  expect(await scalar("select details->>'caption' from public.company_calendar_items where id=$1",[item])).toBe('Edição humana');
+  for(const user of [users.other,users.attendant]){await as(user);expect((await db.query('select * from public.company_calendar_items')).rows).toHaveLength(0);expect((await db.query('select * from public.company_creatives')).rows).toHaveLength(0);await expect(scalar('select public.start_content_run($1,$2,$3,$4)',[a,randomUUID(),'design',item])).rejects.toThrow('Access denied');}
+ });
+ it('OAuth states are single-use and connections cannot claim another company instance',async()=>{
+  await as(users.owner);const session=randomUUID(),hash='a'.repeat(64);await scalar('select public.begin_meta_session($1,$2,$3)',[a,session,hash]);
+  await as(users.other);await expect(scalar('select public.consume_meta_session($1,$2)',[session,hash])).rejects.toThrow('OAuth state unavailable');
+  await as(users.owner);expect(await scalar('select public.consume_meta_session($1,$2)',[session,hash])).toBe(a);await expect(scalar('select public.consume_meta_session($1,$2)',[session,hash])).rejects.toThrow('OAuth state unavailable');
+  await scalar('select public.save_meta_selection($1,$2)',[session,'encrypted-fixture']);await expect(scalar('select public.read_meta_selection($1,$2)',[b,session])).rejects.toThrow();
+  await expect(scalar('select public.save_company_channel($1,$2,$3,$4,$5,$6,$7)',[a,'evolution','askadia-'+b,'WhatsApp','pending','{}','encrypted-fixture'])).rejects.toThrow('Company instance required');
+  await scalar('select public.save_company_channel($1,$2,$3,$4,$5,$6,$7)',[a,'evolution','askadia-'+a,'WhatsApp','pending','{}','encrypted-fixture']);
+  await as(users.marketing);await expect(scalar('select public.read_channel_secret($1,$2)',[a,'evolution'])).rejects.toThrow('Owner required');await expect(scalar('select public.begin_meta_session($1,$2,$3)',[a,randomUUID(),hash])).rejects.toThrow('Owner required');
+  await as(users.other);expect((await db.query('select * from public.company_channels')).rows).toHaveLength(0);await expect(db.query('select * from private.channel_secrets')).rejects.toThrow();
+  await as(users.owner);await scalar('select public.disconnect_company_channel($1,$2)',[a,'evolution']);expect(await scalar('select public.read_channel_secret($1,$2)',[a,'evolution'])).toBeNull();
+ });
+ it('attendants operate persistent CRM and handoff cancels queued and claimed AI work',async()=>{
+  await as(users.attendant);const nonce=randomUUID();const args=[a,nonce,'Contato de teste','+5535999991111','cliente@example.test','Musculação'];const first=await scalar<{contact:{id:string};opportunity:{id:string}}>('select public.save_crm_contact($1,$2,$3,$4,$5,$6)',args);const replay=await scalar<{contact:{id:string}}>('select public.save_crm_contact($1,$2,$3,$4,$5,$6)',args);expect(replay.contact.id).toBe(first.contact.id);
+  const moved=await scalar<{stage:string}>('select public.move_crm_opportunity($1,$2,$3,$4)',[a,first.opportunity.id,'scheduled','Visita marcada pelo cliente']);expect(moved.stage).toBe('scheduled');expect(await scalar('select count(*)::int from public.stage_history where opportunity_id=$1',[first.opportunity.id])).toBe(1);
+  await expect(scalar('select public.open_company_conversation($1,$2)',[b,first.contact.id])).rejects.toThrow('Access denied');
+  const c=await scalar<{id:string;mode:string;revision:number}>('select public.open_company_conversation($1,$2)',[a,first.contact.id]);expect(c.mode).toBe('human');
+  const note=randomUUID();await scalar('select public.add_conversation_note($1,$2,$3,$4)',[a,c.id,note,'Retornar após a visita; responsável: atendente']);await scalar('select public.add_conversation_note($1,$2,$3,$4)',[a,c.id,note,'Repetição']);expect(await scalar('select count(*)::int from public.company_conversation_notes where id=$1',[note])).toBe(1);
+  await db.exec('reset role');await db.query("update public.company_conversations set mode='ai',assigned_to=null where id=$1",[c.id]);const version=await scalar<number>('select profile_version from public.company_onboarding where company_id=$1',[a]);const j1=randomUUID(),j2=randomUUID();await db.query("insert into public.company_reply_jobs(id,company_id,conversation_id,conversation_revision,profile_version,state) values($1,$3,$4,0,$5,'pending'),($2,$3,$4,0,$5,'pending')",[j1,j2,a,c.id,version]);await as(users.attendant);expect(await scalar('select public.claim_company_reply($1,$2)',[a,j1])).not.toBeNull();
+  const takeover=await scalar<{mode:string;revision:number}>('select public.set_conversation_mode($1,$2,$3,$4)',[a,c.id,0,'human']);expect(takeover.mode).toBe('human');expect(await scalar('select public.claim_company_reply($1,$2)',[a,j2])).toBeNull();expect(await scalar("select count(*)::int from public.company_reply_jobs where conversation_id=$1 and state='canceled'",[c.id])).toBe(2);await expect(scalar('select public.set_conversation_mode($1,$2,$3,$4)',[a,c.id,0,'closed'])).rejects.toThrow('Conversation changed');
+  await as(users.marketing);expect((await db.query('select * from public.company_conversations')).rows).toHaveLength(0);await expect(scalar('select public.set_conversation_mode($1,$2,$3,$4)',[a,c.id,takeover.revision,'human'])).rejects.toThrow('Access denied');
+  await as(users.owner);await scalar('select public.change_company_member($1,$2,null)',[a,users.attendant]);await as(users.attendant);expect((await db.query('select * from public.company_conversation_notes')).rows).toHaveLength(0);await expect(scalar('select public.claim_company_reply($1,$2)',[a,j1])).rejects.toThrow('Access denied');
+ });
+ it('daily actor ceilings also apply when the same account creates more companies',async()=>{
+  await db.exec('reset role');for(let i=0;i<30;i++)await db.query("insert into public.onboarding_provider_attempts(company_id,request_id,kind,actor_id) values($1,$2,'places',$3)",[b,randomUUID(),users.owner]);await as(users.owner);await expect(scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,randomUUID(),'places'])).rejects.toThrow('Daily account allowance exhausted');
+ });
+ it('Nest HTTP validates bodies, authorizes API requests and persists fallback conversation',async()=>{
+  const module=await Test.createTestingModule({imports:[AppModule]}).overrideProvider(AuthService).useValue({async verify(header?:string){const id=header==='Bearer owner'?users.owner:header==='Bearer attendant'?users.attendant:null;if(!id)return new AuthService({}).verify();return {id,email:'test@example.test',client:{async rpc(name:string,args:Record<string,unknown>){await as(id);try{const keys=Object.keys(args);const data=await scalar('select public.'+name+'('+keys.map((k,i)=>k+' => $'+(i+1)).join(',')+')',Object.values(args).map(v=>typeof v==='object'&&v!==null?JSON.stringify(v):v));return {data,error:null};}catch(e){const error=e as {code:string;message:string};return {data:null,error};}}}};}}).compile();const app=module.createNestApplication({logger:false});await app.listen(0,'127.0.0.1');const url=await app.getUrl();try{
+   expect((await fetch(url+'/onboarding/companies/'+a)).status).toBe(401);expect((await fetch(url+'/onboarding/companies/'+a,{headers:{Authorization:'Bearer attendant'}})).status).toBe(403);
+   const response=await fetch(url+'/onboarding/companies/'+b+'/answers',{method:'POST',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify({requestId:randomUUID(),revision:0,message:'Fitness Dois em Lavras'})});expect(response.status).toBe(201);const saved=await response.json() as OnboardingSnapshot;expect(saved.state.facts.name?.value).toBe('Fitness Dois');expect(saved.state.facts.city?.value).toBe('Lavras');expect(saved.provider.mode).toBe('guided');
+   expect((await fetch(url+'/onboarding/companies/'+b+'/answers',{method:'POST',headers:{Authorization:'Bearer owner','Content-Type':'application/json'},body:JSON.stringify({requestId:'invalid'})})).status).toBe(400);
+  }finally{await app.close();}
+ },20000);
+});
+describe('Controlled guided extraction',()=>{
+ it('does not turn a location-only answer into the business name',()=>{expect(guidedAnswers('identity','No centro de Campinas SP')).toEqual({city:fact('Campinas SP')});expect(guidedAnswers('identity','Estamos em Varginha')).toEqual({city:fact('Varginha')});});
+ it('accepts public website sources and rejects private or credential-bearing URLs',()=>{expect(publicWebsiteUrl('https://academia.com.br/sobre').hostname).toBe('academia.com.br');for(const url of ['http://academia.com.br','https://127.0.0.1','https://localhost','https://host.internal','https://user:secret@academia.com.br','https://academia.com.br?token=secret'])expect(()=>publicWebsiteUrl(url)).toThrow();});
+ it('extracts several explicitly labelled answers and leaves missing facts unknown',()=>{expect(guidedAnswers('services','Serviços: Pilates; Público: Adultos; Objetivo: Visitas')).toEqual({services:fact('Pilates'),audience:fact('Adultos'),objective:fact('Visitas')});expect(guidedAnswers('references','Não tenho referências')).toEqual({references:{value:null,status:'unknown'}});});
+ it('rejects unrecognized facts, invented status and request metadata',()=>{expect(onboardingReplySchema.safeParse({requestId:randomUUID(),revision:0,message:'Olá',answers:{billing:fact('active')}}).success).toBe(false);});
+});

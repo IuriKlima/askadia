@@ -1,0 +1,22 @@
+import { ChannelsController } from './onboarding/channels';
+import { OnboardingController } from './onboarding/controller';
+import { CalendarController } from './onboarding/calendar-controller';
+import { DashboardModule } from './dashboard/controller';
+import 'reflect-metadata';
+import { OperationsController } from './operations/controller';
+import { Controller, Get, Module } from '@nestjs/common';
+import { providers } from '@askadia/integrations';
+import { AUTH_CONFIG, AuthGuard, AuthService } from './identity/auth';
+import { IdentityController } from './identity/controller';
+import { IdentityService } from './identity/service';
+@Controller()
+export class HealthController {
+  @Get('health') health(){return {status:'ok',service:'askadia-api',mode:'development',authentication:process.env.SUPABASE_URL && (process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY) ? 'configured-not-homologated':'not-configured'};}
+  @Get('integrations') integrations(){return providers.map(provider=>({...provider,status:'unconfigured'}));}
+}
+@Module({
+  imports:[DashboardModule],
+  controllers:[ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
+  providers:[IdentityService,AuthService,AuthGuard,{provide:AUTH_CONFIG,useFactory:()=>({url:process.env.SUPABASE_URL,key:(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY)})}],
+})
+export class AppModule {}

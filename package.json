@@ -1,0 +1,29 @@
+{
+  "name": "askadia",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm build:packages && concurrently -n web,api,worker -c cyan,green,magenta \"pnpm --filter @askadia/web dev\" \"pnpm --filter @askadia/api dev\" \"pnpm --filter @askadia/worker dev\"",
+    "build:packages": "pnpm --filter @askadia/contracts build && pnpm --filter @askadia/integrations build",
+    "build": "pnpm build:packages && pnpm --filter @askadia/api build && pnpm --filter @askadia/worker build && pnpm --filter @askadia/web build",
+    "typecheck": "pnpm build:packages && pnpm -r typecheck",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@eslint/js": "^9.39.0",
+    "@nestjs/testing": "11.1.0",
+    "@types/node": "^22.10.0",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.39.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.48.0",
+    "vitest": "^3.2.0"
+  }
+}
