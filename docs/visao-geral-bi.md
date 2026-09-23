@@ -28,10 +28,12 @@ CRM consulta datas em páginas de 1.000 registros e contagens exatas, sem limita
 - Corrigido componente de endereço sem `types` na resposta real do Google. Nenhum cadastro, campanha ou mensagem foi criado nos testes.
 - Maps JavaScript API retornou `ApiNotActivatedMapError`. Google Cloud está sem sessão autenticada; ativação no projeto da chave pendente de login do responsável. A lista funciona sem o mapa.
 - Meta Pages Search continua indisponível com o acesso atual. Homologação da permissão do app pendente.
-- Embed oficial validado em página do Google; comportamento incorporado depende do navegador. Link externo disponível. Ranking próprio de 20 aguarda provedor; nenhuma chave SerpApi foi configurada.
+- Embed oficial validado em página do Google e, após deploy, dentro da visão geral de produção, com termos e barras reais. Link externo disponível caso o navegador bloqueie terceiros. Ranking próprio de 20 aguarda provedor; nenhuma chave SerpApi foi configurada.
 - `dashboard_read` ausente no Supabase remoto (`PGRST202`). Migração aditiva existente `202609219001_dashboard.sql` preparada em `.local/askadia-dashboard.sql` e conferida integralmente no editor (conteúdo normalizado idêntico). Revisão automática bloqueou Run por falta de autorização específica; confirmação solicitada. Não foi executada nem contornada. Não existem ainda fatos financeiros importados neste trabalho.
 
 ## Referências
+
+Deploy da aplicação: commit `20064b3`, Easypanel Success em 23/09/2026 16:53:41 UTC. CRM, filtros e fontes regionais conferidos em produção; layout mobile de 375 px sem transbordamento horizontal.
 
 - [IBGE — API de agregados](https://servicodados.ibge.gov.br/api/docs/agregados?versao=3)
 - [IBGE — tabela 4714](https://sidra.ibge.gov.br/tabela/4714)
