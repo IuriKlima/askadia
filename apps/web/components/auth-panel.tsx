@@ -4,8 +4,8 @@ import { useState,type FormEvent } from 'react';
 import { ArrowRight,ArrowUpRight,LockKeyhole,ShieldCheck } from 'lucide-react';
 import { Button } from '@askadia/ui';
 import {readApiResponse} from '../lib/response';
-export function AuthPanel({configured,callbackError=false,update=false}:{configured:boolean;callbackError?:boolean;update?:boolean}){
-  const [mode,setMode]=useState<'login'|'signup'|'recover'|'update'>(update?'update':'login');
+export function AuthPanel({configured,callbackError=false,update=false,initialMode='login'}:{configured:boolean;callbackError?:boolean;update?:boolean;initialMode?:'login'|'signup'}){
+  const [mode,setMode]=useState<'login'|'signup'|'recover'|'update'>(update?'update':initialMode);
   const [pending,setPending]=useState(false);
   const [message,setMessage]=useState(callbackError?'Este link expirou ou não pôde ser validado. Solicite um novo.':'');
   const [error,setError]=useState(callbackError);
