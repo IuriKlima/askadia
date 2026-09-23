@@ -37,7 +37,7 @@ O cliente deve identificar onde está, qual o próximo passo, o que está pronto
 | Onboarding e materiais | Conversa, resumo, reabertura e upload múltiplo implementados. Perfil remoto v3 e três materiais observados. | Google Maps JavaScript tinha configuração pendente; não houve nova homologação do mapa nem consumo de IA nesta revisão. Melhorar agrupamento do resumo extenso em uma etapa futura. |
 | Estratégia | Proposta em revisão observada na visão geral e calendário. | Aprovação é decisão do cliente. Regeneração e alterações reais não foram acionadas na auditoria. |
 | Preparação e calendário | Produção mostrou preparação concluída, oito ideias e três publicações em setembro a partir do dia 23. | Vídeos finais dependem de gravação/upload. Não há publicador social automático completo: datas são planejamento, não comprovante de postagem. |
-| CRM | Kanban, lista, histórico e links internos presentes no código; revisão anterior já verificou abertura do chat. | Nesta revisão, leitura visual da lista completa ficou limitada por instabilidade do navegador. Limite de mil contatos recentes e sincronização manual permanecem. |
+| CRM | Kanban e busca conferidos em produção; busca sem correspondência informa o resultado e limpar restaura os cartões. Histórico e links internos presentes no código; revisão anterior já verificou abertura do chat. | Limite de mil contatos recentes e sincronização manual permanecem. A lista completa cria centenas de cartões; priorizar paginação/virtualização e busca no servidor para bases maiores. |
 | WhatsApp e IA | Configuração remota mostrou WhatsApp conectado e automação disponível, canal em “Somente atendimento humano”. | Escolher IA/fluxo, revisar prompt e ativar conscientemente. Não foi alterado nem enviado nada na auditoria. |
 | Instagram/Facebook/TikTok | Meta aguardava autorização/seleção da Página; Instagram/Facebook mostravam permissão de mensagens pendente. TikTok indicava integração pendente. | Acessos, análise/homologação e conexão por empresa. Não afirmar que um filtro de canal significa integração ativa. |
 | Campanhas de mensagens | Tela carregou zero alunos e nenhuma campanha, com criar/importar. | Dados e consentimentos, revisão de destinatários, ativação pelo cliente. Não houve campanha real de teste. |
@@ -53,4 +53,10 @@ O cliente deve identificar onde está, qual o próximo passo, o que está pronto
 - Não testar publicação/envio/ativação com efeitos reais. Testes de adaptadores não homologam provedores externos.
 - O navegador local exigiu login; a validação autenticada das telas alteradas será realizada na sessão existente em produção após o deploy autorizado.
 
-Resultado final de testes e implantação: consultar `docs/progress.md`.
+## Validação concluída
+
+`pnpm check` passou: lint, tipos, 186 testes em 19 arquivos e builds API/worker/Next. Commit de aplicação `e789eb9`, enviado para `main` e implantado no Easypanel com Success em 23/09/2026 às 14:29:10 UTC.
+
+Conferido na nova versão autenticada em produção: visão geral com oito ideias e pendências reais; edição de estratégia abre o formulário e foca o campo; mês atual setembro/2026, avanço para outubro, abertura de dia vazio e retorno conservando outubro; botão Hoje restaura setembro. Em 390 px, lista de publicações aparece, menu abre e fecha ao navegar, calendário e site sem transbordamento horizontal (largura útil e scrollWidth de 375 px). Abas de prévia/domínio, bloqueio explícito por WhatsApp ausente e aviso de site não publicado conferidos. CRM mostra busca vazia com limpeza funcional. Caixa de entrada carregou conversas e não registrou erros de console na consulta.
+
+Não foram forçadas falhas de provedor, sessão expirada ou operações de domínio na conta real. A validação dessas correções combina inspeção do código e testes locais; não equivale à homologação de SMTP, DNS/HTTPS, Ads, Maps ou publicação social. Nenhuma aprovação, envio ou publicação foi executada para testar.
