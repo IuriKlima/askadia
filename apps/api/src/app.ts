@@ -1,4 +1,5 @@
 import {ContentPreparation} from './onboarding/content-preparation';
+import {OverviewController} from './dashboard/overview-controller';
 import {ImageDescriptions} from './onboarding/image-descriptions';
 import {CompanySiteController,PublicSiteController} from './sites/controller';
 import {AdsController} from './campaigns/ads-controller';
@@ -27,7 +28,7 @@ export class HealthController {
 }
 @Module({
   imports:[DashboardModule],
-  controllers:[CompanySiteController,PublicSiteController,AdsController,MetaInboxController,CustomerHistoryController,ManagementController,ManagementIngestionController,CampaignsController,InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
+  controllers:[OverviewController,CompanySiteController,PublicSiteController,AdsController,MetaInboxController,CustomerHistoryController,ManagementController,ManagementIngestionController,CampaignsController,InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
   providers:[ContentPreparation,ImageDescriptions,CampaignDelivery,InboxAutomation,IdentityService,AuthService,AuthGuard,{provide:AUTH_CONFIG,useFactory:()=>({url:process.env.SUPABASE_URL,key:(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY)})}],
 })
 export class AppModule {}

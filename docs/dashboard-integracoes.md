@@ -1,5 +1,7 @@
 # Dashboard Askadia — integrações e ativação
 
+Atualização de 23/09/2026: a nova visão geral consulta CRM/campanhas, IBGE e Google Places reais. Estado atual, Google Trends, dependências Maps/Meta e situação da migração de BI estão em [visao-geral-bi.md](visao-geral-bi.md). As seções abaixo documentam a fundação do módulo financeiro/importações.
+
 ## Situação verificável
 O dashboard autenticado está em `/dashboard` e `/resultados`; ambas usam o mesmo motor. O menu Empresas inclui o acesso. O caminho atualmente utilizável após as migrações é **importação CSV auditada → PostgreSQL → API autorizada → dashboard e exportação**.
 
