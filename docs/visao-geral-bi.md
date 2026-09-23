@@ -35,6 +35,8 @@ CRM consulta datas em páginas de 1.000 registros e contagens exatas, sem limita
 
 Deploy da aplicação: commit `20064b3`, Easypanel Success em 23/09/2026 16:53:41 UTC. CRM, filtros e fontes regionais conferidos em produção; layout mobile de 375 px sem transbordamento horizontal.
 
+Correção posterior `c49a7f9` no GitHub: protege a seleção de concorrentes contra falha do SDK no descarte de marcadores após autorização negada. Teste de regressão e typecheck web passaram; segundo deploy não foi confirmado porque o navegador deixou de responder. O último deploy acima ainda não contém essa correção. Reabrir o Easypanel e implantar a revisão antes de homologar novamente a seleção com Maps desativado.
+
 - [IBGE — API de agregados](https://servicodados.ibge.gov.br/api/docs/agregados?versao=3)
 - [IBGE — tabela 4714](https://sidra.ibge.gov.br/tabela/4714)
 - [Google Places Nearby Search](https://developers.google.com/maps/documentation/places/web-service/nearby-search)
