@@ -11,3 +11,14 @@ export async function provisionSiteDomain(company:string,host:string){
  const existing=list.find((d:Record<string,unknown>)=>d.host===hostname);if(existing){const dest=existing.serviceDestination as Record<string,unknown>|undefined;if(existing.https!==true||dest?.projectName!==projectName||dest.serviceName!==serviceName||dest.port!==3000)throw new Error('Existing domain differs');return true;}
  await request('createDomain',{id:'askadia-site-'+createHash('sha256').update(company+':'+hostname).digest('hex').slice(0,24),host:hostname,https:true,path:'/',wildcard:false,middlewares:[],certificateResolver:process.env.EASYPANEL_CERTIFICATE_RESOLVER,destinationType:'service',serviceDestination:{projectName,serviceName,protocol:'http',port:3000}});return true;
 }
+
+/** Called only after the versioned publication transaction succeeds. */
+export async function provisionPublishedSite(company:string,slug:string|null,custom:{hostname:string;dns_verified_at:string|null}|null){
+ const platform=process.env.SITES_PLATFORM_DOMAIN||new URL(process.env.WEB_ORIGIN!).hostname;
+ const hosts=[...(slug?[siteDomain(slug+'.'+platform)]:[]),...(custom?.dns_verified_at?[siteDomain(custom.hostname)]:[])];
+ if(!hosts.length)return {status:custom?'pending_verification':'not_needed',message:custom?'Site publicado no link da Askadia. Verifique o DNS do domínio próprio para ativar seu endereço.':'Site publicado no link da Askadia. Você pode escolher um subdomínio em Domínio e endereço.'};
+ if(!hostingConfigured())return {status:'pending_configuration',message:'Site publicado no link da Askadia. A ativação do endereço aguarda a configuração da hospedagem pela equipe Askadia.'};
+ const results=await Promise.allSettled([...new Set(hosts)].map(host=>provisionSiteDomain(company,host)));
+ if(results.some(r=>r.status==='rejected'))return {status:'failed',message:'Site publicado no link da Askadia. Não foi possível ativar todos os endereços agora; tente Publicar novamente. O conteúdo publicado foi preservado.'};
+ return {status:'requested',message:'Site publicado. Os endereços foram cadastrados na hospedagem e o HTTPS foi solicitado. O acesso depende da propagação do DNS e da emissão do certificado.'};
+}
