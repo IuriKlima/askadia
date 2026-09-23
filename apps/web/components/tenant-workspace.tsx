@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import {readApiResponse} from '../lib/response';
 import { journeyApi } from '../lib/journey-api';
 import { CompanyPlan } from './company-plan';
 import { DraftImportPanel } from './draft-import';
@@ -10,10 +11,8 @@ import { Button,Modal } from '@askadia/ui';
 import { companyRoles,roleLabels,type CompanyRecord,type CompanyTeam,type IdentitySnapshot,type MemberRecord } from '@askadia/contracts';
 async function api<T>(path='',method='GET',body?:unknown,signal?:AbortSignal):Promise<T>{
   const response=await fetch('/api/identity'+(path?'/'+path:''),{method,headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store',signal});
-  const result=await response.json();
-  if(response.status===401){window.location.assign('/login');throw new Error('Sua sessão expirou.');}
-  if(!response.ok) throw new Error(result.message||'Não foi possível concluir.');
-  return result as T;
+  if(response.status===401)window.location.assign('/login');
+  return readApiResponse<T>(response);
 }
 const segmentLabels={gym:'Academia',studio:'Estúdio',other:'Outro'};
 type ModalType='workspace'|'company'|'edit'|'invite'|'member'|'archive'|'accept'|null;

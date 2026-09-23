@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState,type FormEvent } from 'react';
 import { ArrowRight,ArrowUpRight,LockKeyhole,ShieldCheck } from 'lucide-react';
 import { Button } from '@askadia/ui';
+import {readApiResponse} from '../lib/response';
 export function AuthPanel({configured,callbackError=false,update=false}:{configured:boolean;callbackError?:boolean;update?:boolean}){
   const [mode,setMode]=useState<'login'|'signup'|'recover'|'update'>(update?'update':'login');
   const [pending,setPending]=useState(false);
@@ -13,8 +14,7 @@ export function AuthPanel({configured,callbackError=false,update=false}:{configu
     const fields=new FormData(event.currentTarget);const inviteToken=new URLSearchParams(window.location.hash.slice(1)).get('invite');
     try{
       const response=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:mode,...(mode!=='update'?{email:String(fields.get('email'))}:{}),...(mode!=='recover'?{password:String(fields.get('password'))}:{}),...(mode==='signup'?{name:String(fields.get('name')),...(inviteToken&&/^[a-f0-9]{64}$/.test(inviteToken)?{inviteToken}:{})}:{})})});
-      const payload=await response.json();
-      if(!response.ok) throw new Error(payload.message||'Não foi possível continuar.');
+      const payload=await readApiResponse<{ok?:boolean;message:string}>(response);
       if(payload.ok){window.location.assign(/^#invite=[a-f0-9]{64}$/.test(window.location.hash)?'/workspace'+window.location.hash:'/entrada');return;}
       setMessage(payload.message);
     }catch(cause){setError(true);setMessage(cause instanceof Error?cause.message:'Não foi possível conectar. Tente novamente.');}
