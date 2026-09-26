@@ -13,3 +13,12 @@
 .db-bars i[data-negative=true]{background:#a66c63!important;border-top:2px dashed #773f37}
 
 .db-keyword-profile fieldset{border:0;padding:15px 0;display:flex;flex-wrap:wrap;gap:16px}.db-keyword-profile p{line-height:1.7}.db-keyword-profile label{display:flex;align-items:center;gap:8px;font-size:12px}
+
+/* Keep route-level CSS consistent regardless of navigation/import order. */
+.db-sidebar{background:#fcfdf9}
+.db-sidebar nav button.active{background:var(--brand-tint);color:var(--brand)}
+.db-heading h1,.db-section-heading h2{color:var(--brand)}
+.db-bars i{background:var(--brand)}
+.db-series figure:nth-child(2) i{background:#619683}
+.db-series figure:nth-child(3) i{background:#a1cf7c}
+.db-shell :focus-visible{outline-color:var(--brand)}

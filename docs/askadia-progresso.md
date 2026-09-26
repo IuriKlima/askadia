@@ -99,3 +99,7 @@ Dockerfile e runner de produção adicionados para Next+API, com autenticação,
 Preparados 13 modelos HTML em português com logo textual, cores e tipografia da Askadia, layout por tabelas, estilos inline e fallback de links. Gerador único em scripts/build-account-emails.mjs e configuração dos assuntos/avisos em supabase/templates/auth-config.json. Prévia desktop e 390 px conferida. Painel Supabase confirmou bloqueio de personalização sem SMTP próprio; credencial Resend/remetente ausentes. Configuração remota e entrega continuam pendentes do provedor e domínio verificado; nenhum e-mail real enviado. Documentação: docs/emails-da-conta.md.
 
 Validação dos modelos: geração consistente dos 13 HTMLs, variáveis e links de autenticação preservados; pnpm check passou (145 testes, lint, tipos e builds). Envio real e aplicação remota não executados, pendentes de SMTP próprio.
+
+
+## Identidade visual — 25/09/2026
+Continuação da troca de identidade conforme a prancha enviada pelo usuário: verde-petróleo/lima, símbolo compartilhado, assinatura “Conversa que vira ação”, aplicações no produto, login e site. A solicitação atual substitui a orientação visual anterior de manter o estilo cinza. Escopo, verificação e limites em docs/identidade-visual-2026-09-25.md e na entrada correspondente de docs/progress.md. Sem implantação nesta etapa.

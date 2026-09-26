@@ -1,5 +1,6 @@
 import { ArrowRight, CalendarDays, Check, Globe2, MessageCircle, Sparkles, Target, Users } from 'lucide-react';
 import Link from 'next/link';
+import { BrandContours, BrandWordmark } from '../components/brand';
 import { MarketingShell, ProductPreview, SectionHeading, FinalCta, Faq, marketingMetadata, signupHref } from '../components/marketing-site';
 import s from './home.module.css';
 
@@ -10,12 +11,17 @@ export default function HomePage() {
     <section className={s.hero}>
       <div className={s.heroCopy}>
         <span className={s.eyebrow}><span className={s.dot}/>MARKETING COM IA PARA ACADEMIAS</span>
-        <h1>Sua academia tem muito a oferecer.<br/><span>Faça isso aparecer.</span></h1>
+        <h1>Sua academia tem potencial.<br/><span>Dê direção ao seu marketing.</span></h1>
         <p>Transforme seus diferenciais em uma estratégia clara, conteúdo com a sua marca e conversas bem acompanhadas. Tudo em um só lugar, com a inteligência da Askadia.</p>
         <div className={s.actions}><Link className={s.primary} href={signupHref}>Começar com minha academia <ArrowRight size={18}/></Link><a className={s.textLink} href="#como-funciona">Veja como funciona <ArrowRight size={16}/></a></div>
         <p className={s.microcopy}>Comece pelo cadastro. Sem cobrança automática.</p>
       </div>
       <ProductPreview/>
+    </section>
+    <section className={s.brandStatement} aria-label="Askadia: conversa que vira ação">
+      <BrandContours/>
+      <div><BrandWordmark/><p>Conversa que vira ação.</p></div>
+      <span>Você traz a sua história.<br/>Juntos, construímos o próximo passo.</span>
     </section>
     <div className={s.proofStrip}><span>DO PRIMEIRO PLANO À PRÓXIMA CONVERSA</span><p><Target size={18}/> Estratégia</p><p><CalendarDays size={18}/> Conteúdo</p><p><MessageCircle size={18}/> Atendimento</p><p><Users size={18}/> Relacionamento</p></div>
     <section id="solucao" className={s.section}>

@@ -1,4 +1,6 @@
 'use client';
+import {BrandWordmark} from './brand';
+
 import Link from 'next/link';
 import { useEffect,useRef,useState,type FormEvent } from 'react';
 import { ArrowUpRight,BarChart3,Download,FileUp,Info,RefreshCw,ShieldCheck,TrendingUp } from 'lucide-react';
@@ -45,7 +47,7 @@ export function DashboardPanel({companies,initial,today}:{companies:Company[];in
  }
  const section=query.section;
  const active=companies.find(c=>c.id===query.companyId);
- return <div className="db-shell"><aside className="db-sidebar"><Link href="/workspace" className="brand"><span className="brand-mark">a</span>askadia.</Link><div className="db-side-caption">DESEMPENHO DO NEGÓCIO</div><nav aria-label="Seções do dashboard">{tabs.map(([id,label])=><button key={id} className={section===id?'active':''} onClick={()=>patch({section:id,account:'',campaign:'',channel:'all'})} aria-current={section===id?'page':undefined}><span>{label}</span><ArrowUpRight size={14}/></button>)}</nav><div className="db-side-bottom"><Link href="/workspace"><ShieldCheck size={15}/>Empresas e permissões</Link><small>Dados com origem.<br/>Decisões com contexto.</small></div></aside>
+ return <div className="db-shell"><aside className="db-sidebar"><Link href="/workspace" className="brand"><BrandWordmark/></Link><div className="db-side-caption">DESEMPENHO DO NEGÓCIO</div><nav aria-label="Seções do dashboard">{tabs.map(([id,label])=><button key={id} className={section===id?'active':''} onClick={()=>patch({section:id,account:'',campaign:'',channel:'all'})} aria-current={section===id?'page':undefined}><span>{label}</span><ArrowUpRight size={14}/></button>)}</nav><div className="db-side-bottom"><Link href="/workspace"><ShieldCheck size={15}/>Empresas e permissões</Link><small>Dados com origem.<br/>Decisões com contexto.</small></div></aside>
  <main className="db-main"><header className="db-top"><span>Resultados / {tabs.find(t=>t[0]===section)?.[1]}</span><span><ShieldCheck size={13}/>Acesso por empresa</span></header>
  <div className="db-body"><div className="db-heading"><div><p className="db-eyebrow">UMA VISÃO CLARA DO SEU NEGÓCIO</p><h1>Os números. E o que eles dizem.</h1><p>Presença digital, investimento e aquisição, com os limites de cada fonte.</p></div><Button variant="outline" onClick={()=>setRevision(n=>n+1)} disabled={loading||!first}><RefreshCw size={15}/>Atualizar leitura</Button></div>
  {!first?<section className="panel"><Empty title="Comece selecionando sua empresa." text="Cadastre uma empresa ou aceite um convite para consultar indicadores autorizados."/><Link href="/workspace" className="button button-primary">Ir para empresas</Link></section>:<>
