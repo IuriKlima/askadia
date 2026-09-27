@@ -1,0 +1,149 @@
+{
+  "date": "2026-09-27",
+  "fx": 5.1991,
+  "rateDate": "2026-09-25",
+  "rates": {
+    "astra": [
+      10,
+      50
+    ],
+    "sol": [
+      2,
+      10
+    ],
+    "luna": [
+      0.1,
+      0.5
+    ]
+  },
+  "out": [
+    {
+      "name": "enxuto",
+      "astra": [
+        50000,
+        25000
+      ],
+      "sol": [
+        100000,
+        30000
+      ],
+      "luna": [
+        1000000,
+        60000
+      ],
+      "images": 25,
+      "search": 10,
+      "breakdown": {
+        "astra": 1.75,
+        "sol": 0.5,
+        "luna": 0.13,
+        "images": 5,
+        "search": 0.1
+      },
+      "usd": 7.4799999999999995,
+      "brl": 38.889267999999994,
+      "reserve30": 50.556048399999995
+    },
+    {
+      "name": "padrao",
+      "astra": [
+        100000,
+        60000
+      ],
+      "sol": [
+        200000,
+        60000
+      ],
+      "luna": [
+        5000000,
+        300000
+      ],
+      "images": 50,
+      "search": 30,
+      "breakdown": {
+        "astra": 4,
+        "sol": 1,
+        "luna": 0.65,
+        "images": 10,
+        "search": 0.3
+      },
+      "usd": 15.950000000000001,
+      "brl": 82.925645,
+      "reserve30": 107.80333850000001
+    },
+    {
+      "name": "intenso",
+      "astra": [
+        300000,
+        150000
+      ],
+      "sol": [
+        600000,
+        180000
+      ],
+      "luna": [
+        30000000,
+        1800000
+      ],
+      "images": 150,
+      "search": 100,
+      "breakdown": {
+        "astra": 10.5,
+        "sol": 3,
+        "luna": 3.9,
+        "images": 30,
+        "search": 1
+      },
+      "usd": 48.4,
+      "brl": 251.63643999999996,
+      "reserve30": 327.127372
+    },
+    {
+      "name": "implantacaoAdicional",
+      "astra": [
+        80000,
+        50000
+      ],
+      "sol": [
+        80000,
+        30000
+      ],
+      "luna": [
+        200000,
+        50000
+      ],
+      "images": 12,
+      "search": 30,
+      "breakdown": {
+        "astra": 3.3,
+        "sol": 0.46,
+        "luna": 0.045,
+        "images": 2.4000000000000004,
+        "search": 0.3
+      },
+      "usd": 6.505,
+      "brl": 33.820145499999995,
+      "reserve30": 43.96618915
+    }
+  ],
+  "imageProvider": "gpt-image-2.5-sunburst",
+  "quality": "high",
+  "imageUnitBudget": 0.2,
+  "outputCalculator": [
+    {
+      "size": "1536x1920",
+      "tokens": 2257,
+      "usd": 0.06771
+    },
+    {
+      "size": "2048x1152",
+      "tokens": 1413,
+      "usd": 0.04239
+    },
+    {
+      "size": "1792x1792",
+      "tokens": 3002,
+      "usd": 0.09006
+    }
+  ]
+}

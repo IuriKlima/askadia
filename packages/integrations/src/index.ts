@@ -1,6 +1,6 @@
 export const providers = [
-  { id: 'gemini', name: 'Nano Banana Pro · Gemini', category: 'Design com IA', description: 'Imagens e variações com referências e identidade da empresa.' },
-  { id: 'openai', name: 'OpenAI', category: 'Inteligência artificial', description: 'Estratégias, propostas de tráfego pago, textos e triagem com contexto da sua empresa.' },
+  { id: 'gemini', name: 'Gemini', category: 'Análise de materiais', description: 'Descrição visual dos materiais enviados pela empresa.' },
+  { id: 'openai', name: 'OpenAI', category: 'Inteligência artificial', description: 'Estratégias, textos, atendimento e geração/edição de imagens com GPT Image 2.5 Sunburst.' },
   { id: 'instagram', name: 'Instagram', category: 'Conteúdo e atendimento', description: 'Publicação, mensagens e indicadores da sua conta profissional.' },
   { id: 'whatsapp', name: 'WhatsApp', category: 'Atendimento', description: 'Conversas e encaminhamento de leads para sua equipe.' },
   { id: 'meta', name: 'Meta Ads', category: 'Mídia paga', description: 'Campanhas supervisionadas e captura de novos contatos.' },

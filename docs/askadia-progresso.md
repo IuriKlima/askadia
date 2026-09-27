@@ -103,3 +103,8 @@ Validação dos modelos: geração consistente dos 13 HTMLs, variáveis e links 
 
 ## Identidade visual — 25/09/2026
 Continuação da troca de identidade conforme a prancha enviada pelo usuário: verde-petróleo/lima, símbolo compartilhado, assinatura “Conversa que vira ação”, aplicações no produto, login e site. A solicitação atual substitui a orientação visual anterior de manter o estilo cinza. Escopo, verificação e limites em docs/identidade-visual-2026-09-25.md e na entrada correspondente de docs/progress.md. Sem implantação nesta etapa.
+
+
+## Campanhas automáticas e geração real — 27/09/2026
+
+Implementados localmente: preparação de propostas após a estratégia, criação de anúncios Meta/Google, revisão de orçamento/texto/criativo/região/datas, ativação automática programada depois da aprovação, pausa/cancelamento, alerta persistente de saldo e proteção contra duplicação. Formatos e limites em [tráfego e implantação](trafego-execucao-2026-09-27.md). Geração GPT Image 2.5 Sunburst real concluída e inspecionada, sem publicar a imagem. Pacote de cinco migrações preparado e validado localmente; aplicação remota/deploy/configuração OAuth Google ainda dependem de acesso. Evidências e situação dos testes em docs/progress.md.

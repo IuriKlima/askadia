@@ -1,3 +1,7 @@
+import {AdExecutionController,AdExecutionWorker,AdPreparationWorker} from './campaigns/ad-execution';
+import {VisualJobs,VisualJobsController} from './ai/visual-jobs';
+import {InstagramController,InstagramMonitor} from './onboarding/instagram';
+import {LaunchController,LaunchPreparation} from './onboarding/launch';
 import {ContentPreparation} from './onboarding/content-preparation';
 import {OverviewController} from './dashboard/overview-controller';
 import {ImageDescriptions} from './onboarding/image-descriptions';
@@ -28,7 +32,7 @@ export class HealthController {
 }
 @Module({
   imports:[DashboardModule],
-  controllers:[OverviewController,CompanySiteController,PublicSiteController,AdsController,MetaInboxController,CustomerHistoryController,ManagementController,ManagementIngestionController,CampaignsController,InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
-  providers:[ContentPreparation,ImageDescriptions,CampaignDelivery,InboxAutomation,IdentityService,AuthService,AuthGuard,{provide:AUTH_CONFIG,useFactory:()=>({url:process.env.SUPABASE_URL,key:(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY)})}],
+  controllers:[AdExecutionController,VisualJobsController,InstagramController,LaunchController,OverviewController,CompanySiteController,PublicSiteController,AdsController,MetaInboxController,CustomerHistoryController,ManagementController,ManagementIngestionController,CampaignsController,InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
+  providers:[AdPreparationWorker,AdExecutionWorker,VisualJobs,InstagramMonitor,LaunchPreparation,ContentPreparation,ImageDescriptions,CampaignDelivery,InboxAutomation,IdentityService,AuthService,AuthGuard,{provide:AUTH_CONFIG,useFactory:()=>({url:process.env.SUPABASE_URL,key:(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY)})}],
 })
 export class AppModule {}

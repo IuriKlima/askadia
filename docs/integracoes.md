@@ -19,3 +19,12 @@ Não existem URLs de webhook/OAuth operacionais para os provedores além do call
 Estados distintos: implementado, configurado, conexão validada, homologado, degradado, indisponível. Verificação de conexão não executa geração, envio ou campanha.
 
 Para cada provedor futuro: verificar documentação oficial vigente antes de implementar, registrar permissões exatas, aprovação de conta/aplicativo, operação de smoke test e estratégia de reconciliação. Não extrapolar a homologação de uma operação para todo o provedor.
+
+
+## Google Ads / Meta Ads — executor de 27/09/2026
+
+Implementação local com API Google v25 e Meta v26.0 configuráveis. Google: cliente OAuth web exclusivo ou aprovado para Askadia, callback https://askadia.com.br/api/connections/google/callback, escopo https://www.googleapis.com/auth/adwords, developer token com acesso de produção e projeto Cloud autorizado quando exigido. GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET e GOOGLE_ADS_DEVELOPER_TOKEN são privados do servidor. login_customer_id fica por empresa para contas filhas MCC. O cliente autoriza e seleciona a própria conta pelo onboarding/Integrações.
+
+Meta: Página da empresa e token com ads_management; conta de anúncios selecionada e vinculada à mesma Página. Ativos, permissões, cobrança e revisão do app precisam ser homologados. Não tratar conta ativa como prova de saldo. O monitor registra erro de saldo/pagamento reportado pelo provedor e conserva a programação aprovada até o fim do período.
+
+Nenhuma campanha real foi criada ou ativada no teste. Implementação e configuração não equivalem a homologação. Veja docs/trafego-execucao-2026-09-27.md e as fontes oficiais: https://developers.google.com/google-ads/api/docs/campaigns/budgets/create-budgets , https://developers.google.com/google-ads/api/docs/get-started/handle-errors , https://developers.google.com/google-ads/api/docs/oauth/overview , https://github.com/facebook/facebook-php-business-sdk .

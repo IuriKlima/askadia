@@ -41,4 +41,16 @@ describe('Campaign conditions and company isolation',()=>{
   await scalar('select public.save_message_campaign($1,$2::jsonb)',[a,JSON.stringify({...campaign,revision:1})]);expect((await scalar<{total:number}>('select public.preview_message_campaign($1,$2)',[a,campaign.id])).total).toBe(0);
  });
 
+ it('starts an approved campaign only in its scheduled window without a second activation',async()=>{
+  await db.exec('reset role');await db.query("update public.message_campaigns set status='paused' where company_id=$1",[a]);await db.query("update public.message_campaign_deliveries set created_at=now()-interval '2 minutes' where company_id=$1",[a]);await as(owner);
+  await scalar('select public.import_campaign_students($1,$2::jsonb)',[a,JSON.stringify([student('scheduled-only','+5511999999088')])]);
+  const recipient=await scalar<string>("select id from public.campaign_students where company_id=$1 and external_id='scheduled-only'",[a]);
+  const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);const campaign={...input(),trigger:'selected',recipientIds:[recipient],startDate:tomorrow};
+  await scalar('select public.save_message_campaign($1,$2::jsonb)',[a,JSON.stringify(campaign)]);await scalar('select public.activate_message_campaign($1,$2,1,true)',[a,campaign.id]);
+  await db.exec('reset role;set role service_role');expect(await scalar('select public.claim_message_campaign()')).toBeNull();
+  // Move this isolated fixture into the due window; no second activation or real provider call.
+  await db.exec('reset role');await db.query("update public.message_campaigns set start_date=(now() at time zone 'UTC')::date,send_time=(now() at time zone 'UTC')::time-interval '1 minute' where id=$1",[campaign.id]);await db.exec('set role service_role');
+  const job=await scalar<{id:string;token:string}>('select public.claim_message_campaign()');expect(job).not.toBeNull();expect(await scalar('select public.prepare_message_campaign($1,$2)',[job.id,job.token])).toBe(true);
+  await as(owner);await scalar('select public.save_message_campaign($1,$2::jsonb)',[a,JSON.stringify({...campaign,revision:1,message:'Texto alterado, exige nova aprovação'})]);expect(await scalar('select status from public.message_campaigns where id=$1',[campaign.id])).toBe('draft');
+ });
 });

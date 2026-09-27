@@ -29,3 +29,8 @@ O prompt mestre (askadia-requisitos.md) substitui conflitos anteriores. Propriet
 Tokens encontrados: globals.css define --bg, --surface, --ink, --muted, --line; tipografia do sistema; tons neutros, cards, bordas discretas e esculturas CSS existentes. Extração e ampliação ocorrerão sem substituir identidade.
 
 A ordem atual é a da seção 25 do prompt mestre. As etapas antigas nos documentos anteriores são históricas; não representam o novo sequenciamento.
+
+
+## Revisão de implantação — 27/09/2026
+
+Automação de anúncios estava ausente; agora há implementação local para Meta imagem/tráfego web e Google Pesquisa, com aprovação final, programação, isolamento e reconciliação. Revisão detalhada: [tráfego e implantação](trafego-execucao-2026-09-27.md). A geração de imagem OpenAI foi exercitada com sucesso real; os anúncios continuam sem homologação nas contas dos provedores. Produção está atrás do código local: tabelas de jornada/imagens/execução ausentes e rota nova de anúncios 404. Deploy e migração dependem das sessões corretas do Easypanel/Supabase; Google Ads depende de MCC, OAuth e token aprovado. Não há evidência para declarar todo o sistema pronto para produção.

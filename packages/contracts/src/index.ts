@@ -82,3 +82,11 @@ export * from './meta';
 export * from './campaigns';
 export * from './site';
 export * from './market';
+
+export * from './launch';
+
+export * from './instagram';
+
+export * from './visual';
+
+export * from './ad-execution';
