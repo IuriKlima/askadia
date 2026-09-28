@@ -17,4 +17,4 @@ export function instagramEngagement(snapshot:InstagramSnapshot){
  return {sampleSize:snapshot.posts.length,measuredPosts:measured.length,meanInteractions:mean,engagementPercent:mean!==null&&snapshot.followers!==null&&snapshot.followers>0?mean/snapshot.followers*100:null};
 }
 export type InstagramCandidate={username:string;name:string;url:string;context:string};
-export type InstagramWatch={id:string;username:string;label:string;kind:'local'|'inspiration';status:string;error:string|null;next_attempt_at:string;snapshot:InstagramSnapshot|null;previous:InstagramSnapshot|null};
+export type InstagramWatch={id:string;place_id?:string|null;username:string;label:string;kind:'local'|'inspiration';status:string;error:string|null;next_attempt_at:string;snapshot:InstagramSnapshot|null;previous:InstagramSnapshot|null};

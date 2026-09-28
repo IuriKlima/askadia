@@ -4,7 +4,7 @@ import {preferredContactName,meaningfulContactName} from '../inbox/contact-name'
 import {generateStrategy} from './strategy';
 import { BadRequestException, ServiceUnavailableException, Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
-import { strategyOutputSchema,beginCompanySchema,normalizePhone,guidedAnswers,onboardingReplySchema,profilePatchSchema,type PurchaseState,type OnboardingSnapshot,type PlaceSearchResult } from '@askadia/contracts';
+import { questions,strategyOutputSchema,beginCompanySchema,normalizePhone,guidedAnswers,onboardingReplySchema,profilePatchSchema,type PurchaseState,type OnboardingSnapshot,type PlaceSearchResult } from '@askadia/contracts';
 import { AuthGuard,type AuthRequest,type AuthenticatedActor } from '../identity/auth';
 import { result } from '../identity/service';
 import { extractWebsite,publicWebsiteUrl,interpret,interpreterConfigured,places } from './providers';
@@ -16,7 +16,7 @@ async function snapshot(actor:AuthenticatedActor,id:string){
  const enabled=purchase.aiAllowed&&interpreterConfigured();
  return {...state,question:currentQuestion(state),provider:{aiAllowed:purchase.aiAllowed,mode:enabled?'configured' as const:'guided' as const,message:enabled?'A IA ajuda a interpretar. Confira suas informações antes de confirmar.':!purchase.aiAllowed?'Conversa gratuita: suas respostas ficam salvas. A IA começa após a confirmação do plano.':'Conversa guiada: a interpretação por IA depende de configuração.'}};
 }
-function currentQuestion(state:OnboardingSnapshot){return state.step==='identity'&&state.state.facts.city?.status==='provided'?'Qual é o nome do seu negócio?':state.question;}
+function currentQuestion(state:OnboardingSnapshot){return questions[state.step]??state.question;}
 async function reserve(actor:AuthenticatedActor,id:string,requestId:string,kind:string){const value=await actor.client.rpc('reserve_onboarding_provider',{p_company_id:id,p_request_id:requestId,p_kind:kind});if(value.error?.message==='Daily account allowance exhausted')return false;return result<boolean>(value);}
 async function capability(actor:AuthenticatedActor,id:string,action:string){const cap=result<{actions:string[]}>(await actor.client.rpc('company_capabilities',{p_company_id:id}));if(!cap.actions.includes(action))throw new (await import('@nestjs/common')).ForbiddenException('Seu perfil não permite esta ação.');return cap;}
 @Controller('onboarding')
@@ -40,10 +40,16 @@ export class OnboardingController {
  }
  @Post('companies/:id/places') async search(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown):Promise<PlaceSearchResult>{
   uuid(id);const input=parse(z.object({requestId:z.uuid(),kind:z.enum(['location','competitors']),radius:z.number().int().min(500).max(20000).default(3000)}).strict(),body);await capability(req.actor,id,'marketing.write');const current=await snapshot(req.actor,id);
+  if(current.state.facts.name?.status!=='provided'||current.state.facts.city?.status!=='provided')throw new BadRequestException('Informe primeiro o nome da academia e a cidade.');
+  if(input.kind==='competitors'&&!current.state.location_confirmed)throw new BadRequestException('Confirme o local da academia antes de pesquisar os concorrentes.');
   const fallback={status:'unconfigured' as const,places:[],radius:null,message:'A pesquisa automática de endereços ainda não está ativada na Askadia. Abra o Google Maps para conferir o estabelecimento e informe o endereço na conversa.'};
   if(!process.env.GOOGLE_PLACES_SERVER_KEY)return fallback;
   if(!await reserve(req.actor,id,input.requestId,'places'))return {...fallback,status:'unavailable',message:'O limite de pesquisas desta empresa ou conta foi atingido. Você pode conferir no Google Maps e continuar manualmente.'};
   try{const found=await places(current,input.kind,input.radius);await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'places',p_outcome:'completed'});return found;}catch{await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'places',p_outcome:'failed'});return {...fallback,status:'unavailable',message:'A pesquisa falhou. Nenhum resultado foi inventado. Você pode informar os dados manualmente.'};}
+ }
+ @Post('companies/:id/places/review') async reviewPlaces(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown){
+  uuid(id);const input=parse(z.object({requestId:z.uuid(),revision:z.number().int().nonnegative(),places:z.array(z.object({placeId:z.string().regex(/^[\w-]{5,200}$/),label:z.string().trim().min(1).max(160)}).strict()).max(10)}).strict(),body);
+  await capability(req.actor,id,'marketing.write');result(await req.actor.client.rpc('review_onboarding_competitors',{p_company_id:id,p_request_id:input.requestId,p_revision:input.revision,p_places:input.places}));return snapshot(req.actor,id);
  }
  @Post('companies/:id/website') async website(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown){
   uuid(id);const input=parse(z.object({url:z.string().max(2000),requestId:z.uuid()}).strict(),body);await capability(req.actor,id,'marketing.write');try{publicWebsiteUrl(input.url);}catch{throw new BadRequestException('Informe um site público HTTPS sem credenciais, porta ou parâmetros.');}

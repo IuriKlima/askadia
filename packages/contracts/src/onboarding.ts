@@ -13,8 +13,8 @@ export const interviewKeys=['services','audience','objective','structure','hours
 export const essentialKeys=['name','city','businessType','services','audience','objective'] as const;
 export const labels:Record<ProfileKey,string>={name:'Nome do negócio',city:'Cidade e região atendida',businessType:'Tipo de negócio',address:'Endereço',services:'Serviços e modalidades',audience:'Público desejado',objective:'Objetivo e capacidade',structure:'Estrutura e diferenciais',hours:'Horários e períodos ociosos',offers:'Planos, preços e condições',sales:'Processo comercial',history:'Histórico de marketing',budget:'Orçamento de anúncios',brand:'Identidade e materiais',channels:'Site e canais',video:'Produção de vídeos',management:'Sistema de gestão',competitors:'Concorrentes locais',references:'Referências de comunicação',placeId:'Local selecionado no Google',competitorPlaceIds:'Locais concorrentes selecionados'};
 export const questions:Record<string,string>={
- identity:'Vamos conhecer sua empresa para preparar seu marketing. Qual é o nome do negócio e em qual cidade ele fica?',
- city:'Em qual cidade ou região sua empresa atende?',businessType:'Que tipo de negócio é o seu: academia, estúdio ou outra atividade?',
+ identity:'Qual é o nome do negócio? Vamos começar pela sua academia.',
+ city:'Em qual cidade fica sua academia? Se puder, informe também o estado.',businessType:'Que tipo de negócio é o seu: academia, estúdio ou outra atividade?',
  location:'Vamos confirmar a localização da empresa. Informe o endereço ou a região atendida. Você pode conferir as opções no Google ou continuar manualmente.',
  competitors:'Agora vamos conhecer os concorrentes locais. Revise os resultados da pesquisa ou indique quem disputa o mesmo público na sua região.',
  references:'Quais marcas ou empresas você admira, mesmo de outras regiões? Conte o que gosta na comunicação, oferta, estética ou atendimento delas.',
@@ -25,15 +25,15 @@ export function onboardingStep(s:OnboardingState):string{
  if(s.confirmed_revision===s.revision)return 'complete';
  if(s.facts.name?.status!=='provided')return 'identity';
  if(s.facts.city?.status!=='provided')return 'city';
- if(s.facts.businessType?.status!=='provided')return 'businessType';
- if(!s.location_confirmed)return 'location';if(!s.competitors_reviewed)return 'competitors';if(!s.references_reviewed)return 'references';
+ if(!s.location_confirmed)return 'location';
+ if(s.facts.businessType?.status!=='provided')return 'businessType';if(!s.competitors_reviewed)return 'competitors';if(!s.references_reviewed)return 'references';
  return interviewKeys.find(k=>!s.facts[k])??'review';
 }
 export function missingEssentials(facts:ProfileFacts){return essentialKeys.filter(k=>facts[k]?.status!=='provided'||!facts[k]?.value?.trim());}
 export type OnboardingMessage={id:string;role:'user'|'assistant';body:string;created_at:string;actor_id:string|null;request_id:string|null};
 export type OnboardingAttachment={id:string;company_id:string;name:string;mime:string;size:number;object_path:string;created_at:string};
 export type OnboardingSnapshot={state:OnboardingState;messages:OnboardingMessage[];attachments:OnboardingAttachment[];capabilities:{actions:string[]};confirmedProfile:{version:number;facts:ProfileFacts;confirmed_at:string}|null;provider:{mode:'guided'|'configured';message:string;aiAllowed?:boolean};step:string;question:string};
-export type PlaceOption={id:string;name:string;address:string;latitude:number|null;longitude:number|null;url:string;attributions:{displayName:string;uri:string}[]};
+export type PlaceOption={id:string;name:string;address:string;latitude:number|null;longitude:number|null;url:string;attributions:{displayName:string;uri:string}[];details?:PlaceDetails};
 export type PlaceSearchResult={status:'available'|'unconfigured'|'unavailable';places:PlaceOption[];message:string;radius:number|null;center?:{latitude:number;longitude:number};mapKey?:string};
 
 // Conservative fallback: only explicit labelled facts or a clear name/city pair.
@@ -56,3 +56,6 @@ export function guidedAnswers(step:string,message:string):Partial<Record<Profile
  for(const key of ['name','city','businessType'] as const){if((answer[key]?.value?.length??0)>100)delete answer[key];}
  return answer;
 }
+
+export type PlaceDetails={businessType:string|null;phone:string|null;website:string|null;hours:string[];rating:number|null;reviewCount:number|null;businessStatus:string|null;collectedAt:string};
+export type CompetitorResearch={id:string;place_id:string;label:string;city:string;status:'pending'|'running'|'ready'|'failed'|'stale';candidates:import('./instagram').InstagramCandidate[];error:string|null;collected_at:string|null;selected_username:string|null};

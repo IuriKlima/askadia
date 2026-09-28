@@ -11,8 +11,8 @@ describe('Authenticated browser bridge for checkout and guided marketing',()=>{
  it('forwards exact purchase, strategy and creative routes with verified user session',async()=>{
   const calls=vi.fn(async()=>new Response(JSON.stringify({ok:true}),{status:200}));vi.stubGlobal('fetch',calls);
   for(const suffix of ['purchase','launch','launch/journey','instagram','visual-jobs','ads/executions']){const path='companies/'+company+'/'+suffix;expect((await GET(request('GET',path),context(path))).status).toBe(200);}
-  for(const suffix of ['purchase/checkout','purchase/checkout/confirm','purchase/finish','launch/approve','launch/resume','instagram/select','instagram/search','visual-jobs','ads/executions/'+execution+'/approve']){const path='companies/'+company+'/'+suffix;expect((await POST(request('POST',path),context(path))).status).toBe(200);}
-  expect(calls.mock.calls).toHaveLength(15);expect(calls).toHaveBeenLastCalledWith(expect.stringContaining('/onboarding/companies/'+company+'/ads/executions/'+execution+'/approve'),expect.objectContaining({headers:expect.objectContaining({Authorization:'Bearer fixture-session'})}));
+  for(const suffix of ['purchase/checkout','purchase/checkout/confirm','purchase/finish','launch/approve','launch/resume','instagram/select','instagram/search','instagram/retry','places/review','visual-jobs','ads/executions/'+execution+'/approve']){const path='companies/'+company+'/'+suffix;expect((await POST(request('POST',path),context(path))).status).toBe(200);}
+  expect(calls.mock.calls).toHaveLength(17);expect(calls).toHaveBeenLastCalledWith(expect.stringContaining('/onboarding/companies/'+company+'/ads/executions/'+execution+'/approve'),expect.objectContaining({headers:expect.objectContaining({Authorization:'Bearer fixture-session'})}));
  });
  it('rejects unauthenticated, cross-origin and unlisted server operations before forwarding',async()=>{
   const calls=vi.fn();vi.stubGlobal('fetch',calls);const path='companies/'+company+'/purchase/checkout';
