@@ -38,7 +38,7 @@ Migrações `202609270003_commerce_onboarding.sql` e `202609280001_pricing_semia
 
 ## Configuração e implantação
 
-`CHECKOUT_MODE=test` habilita as simulações na API. Foi aplicado somente ao `.env` local; `.env.example` documenta a opção. Qualquer outro valor bloqueia novas simulações. Acessos de teste já emitidos expiram em sete dias; para encerrá-los antes, revogue explicitamente suas linhas em `private.company_test_access` por operação administrativa autorizada. Desabilitar novas simulações não converte acessos de teste em assinaturas reais.
+`CHECKOUT_MODE=test` habilita as simulações na API. Inicialmente aplicado somente ao `.env` local, passou a ser declarado também no Dockerfile em 28/09 para os deploys desta fase de teste autorizada. O ambiente do Easypanel pode sobrescrever esse valor; veja `docs/deploy-easypanel.md`. Qualquer outro valor bloqueia novas simulações. Acessos de teste já emitidos expiram em sete dias; para encerrá-los antes, revogue explicitamente suas linhas em `private.company_test_access` por operação administrativa autorizada. Desabilitar novas simulações não converte acessos de teste em assinaturas reais.
 
 Aplicar todas as migrações pendentes antes de iniciar a nova API e os workers, e publicar web/API da mesma revisão. A checagem de plano falha fechada se a migração estiver ausente. O pacote local `.local/askadia-update-2026-09-27.sql` inclui a migração comercial de 27/09 e as cinco anteriores pendentes. A migração incremental `202609280001_pricing_semiannual.sql` deve ser aplicada depois; o pacote anterior não a inclui. Não reaplicar esse pacote se parte dele já tiver sido executada; use o histórico de migrações.
 
