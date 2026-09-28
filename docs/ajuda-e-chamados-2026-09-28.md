@@ -23,3 +23,7 @@ A central exige equipe interna provisionada para responder. A migração e a hom
 ## Validação
 
 pnpm check aprovado: lint, tipos, 264 testes e todos os builds. Os oito cenários novos cobrem busca sem informação suficiente, destinos WhatsApp, autorização no proxy e banco, isolamento, carteira interna, revogação, idempotência, status versionado e limites de uso. Prévia fictícia compilada; inspeção visual não concluída porque os navegadores de teste não responderam. Aplicação do SQL e homologação no site publicado ainda pendentes.
+
+
+### Ajuste posterior de posicionamento
+Por solicitação do usuário, Ajuda passa a flutuar no canto inferior direito. O botão é renderizado no corpo da página para não sofrer corte por cabeçalhos e contêineres com rolagem; no onboarding e no atendimento fica acima do campo de resposta. A posição respeita a área segura do celular. Este ajuste é apenas de interface e não requer SQL adicional.

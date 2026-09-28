@@ -57,3 +57,5 @@
 .crmToolbar input,.calendarToolbar input{background:var(--surface);border-color:var(--line);color:var(--ink)}
 .sectionLinks a,.taskPending{background:var(--soft);color:var(--brand)}
 .skipLink{background:var(--brand);color:white}
+
+.content{padding-bottom:90px}

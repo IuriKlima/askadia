@@ -12,6 +12,15 @@ export function result<T>(value:{data:T|null;error:PostgrestError|null}):T {
     if(value.error.message==='No pending content') throw new BadRequestException('As ideias desta estratégia já foram detalhadas. Atualize o calendário.');
     if(value.error.message==='Final media required') throw new BadRequestException('Gere ou envie todos os arquivos da peça antes de aprovar.');
     if(['Content changed','Run changed','Request already used','Generation running','Approve the current strategy first'].includes(value.error.message)) throw new ConflictException('A geração já começou ou a versão mudou. Atualize o calendário e confira a estratégia aprovada.');
+    if(['Strategy not ready','Suggestions not ready'].includes(value.error.message))throw new ConflictException('A proposta ainda está sendo preparada. Aguarde a atualização da etapa antes de aprovar.');
+    if(value.error.message==='Generation already running')throw new ConflictException('A estratégia já está sendo gerada. Aguarde a proposta aparecer para revisão.');
+    if(value.error.message==='Proposal changed; review current version')throw new ConflictException('A proposta foi atualizada. Revise a versão exibida antes de aprovar.');
+    if(value.error.message==='Approve previous stages first')throw new ConflictException('Conclua a aprovação da etapa anterior para continuar.');
+    if(value.error.message==='Review missing competitor data explicitly')throw new BadRequestException('Registre as limitações dos dados de concorrentes antes de continuar.');
+    if(value.error.message==='Plan dates at least seven days ahead')throw new BadRequestException('Ajuste as datas do calendário para pelo menos sete dias à frente antes de aprovar.');
+    if(value.error.message==='A análise mudou. Gere um novo diagnóstico.')throw new ConflictException('A análise de concorrentes mudou. Peça para refazer o diagnóstico antes de aprovar.');
+    if(value.error.message==='A coleta mudou. Revise os dados atualizados antes de aprovar.')throw new ConflictException('A coleta dos concorrentes mudou. Revise os dados atualizados antes de aprovar.');
+    if(value.error.message==='Atualize as primeiras datas para reservar sete dias de produção e revisão.')throw new BadRequestException(value.error.message);
     if(value.error.code==='40001') throw new ConflictException('O perfil mudou em outra sessão. Atualize a conversa antes de salvar novamente.');
     if(value.error.code==='23505') throw new ConflictException('Este registro já existe.');
     if(['22023','23514','23502','22P02'].includes(value.error.code)) throw new BadRequestException('Dados inválidos. Confira os campos e os requisitos desta ação.');

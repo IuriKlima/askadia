@@ -3,7 +3,7 @@ import {Controller,Get,Post,Body,Param,Req,BadRequestException,UseGuards,Injecta
 import OpenAI from 'openai';
 import {z} from 'zod';
 import {zodTextFormat} from 'openai/helpers/zod';
-import {launchRecommendationsSchema,type ProfileFacts,type OnboardingSnapshot,type LaunchJob} from '@askadia/contracts';
+import {launchRecommendationsSchema,type ProfileFacts,type OnboardingSnapshot,type LaunchJob,type MarketingJourney,type StrategyBrief,type PreparationProgress} from '@askadia/contracts';
 import {AuthGuard,type AuthRequest} from '../identity/auth';
 import {result} from '../identity/service';
 import {adsAccess,serviceDb} from '../campaigns/ads';
@@ -34,7 +34,20 @@ export class LaunchPreparation implements OnModuleInit,OnModuleDestroy{
 @Controller('onboarding/companies/:id/launch')
 @UseGuards(AuthGuard)
 export class LaunchController{
- @Get('journey') async journey(@Req() r:AuthRequest,@Param('id') company:string){await adsAccess(r,company);return result(await r.actor.client.rpc('read_marketing_journey',{p_company_id:company}));}
+ @Get('journey') async journey(@Req() r:AuthRequest,@Param('id') company:string){
+  await adsAccess(r,company);
+  const journey=result<MarketingJourney>(await r.actor.client.rpc('read_marketing_journey',{p_company_id:company}));
+  const [brief,content,recommendations]=await Promise.all([
+   r.actor.client.from('company_strategy_briefs').select('id,status,profile_version,generation,created_at').eq('company_id',company).eq('profile_version',journey.profileVersion).maybeSingle(),
+   r.actor.client.from('company_content_preparations').select('status,stage,error').eq('company_id',company).eq('profile_version',journey.profileVersion).maybeSingle(),
+   r.actor.client.from('company_launch_jobs').select('status,error').eq('company_id',company).eq('profile_version',journey.profileVersion).eq('kind','recommendations').maybeSingle()
+  ]);
+  const metadata=result<Omit<StrategyBrief,'output'>|null>(brief);
+  const displayed=journey.stages.find(s=>s.stage===2)?.data as Pick<StrategyBrief,'id'|'generation'|'output'>|null;
+  // Reuse the output tied to the approval basis. A concurrent edit must be loaded again.
+  const strategy=metadata&&metadata.id===displayed?.id&&metadata.generation===displayed.generation?{...metadata,output:displayed.output}:null;
+  return {...journey,strategy,preparation:{available:contentPreparationConfigured()&&launchConfigured(),content:result<PreparationProgress|null>(content),recommendations:result<PreparationProgress|null>(recommendations)}};
+ }
  @Post('approve') async approve(@Req() r:AuthRequest,@Param('id') company:string,@Body() body:unknown){await adsAccess(r,company,'strategy.approve');const input=z.object({stage:z.number().int().min(1).max(5),basis:z.string().regex(/^[a-f0-9]{32}$/),limitations:z.string().max(1000).default(''),evidenceBasis:z.string().regex(/^[a-f0-9]{32}$/).optional()}).strict().safeParse(body);if(!input.success)throw new BadRequestException('Confira a etapa e a versão da proposta.');result(await r.actor.client.rpc('approve_marketing_stage',{p_company_id:company,p_stage:input.data.stage,p_basis:input.data.basis,p_limitations:input.data.limitations,p_evidence_basis:input.data.evidenceBasis??null}));return {ok:true};}
 
  @Get() async read(@Req() r:AuthRequest,@Param('id') company:string){const cap=await adsAccess(r,company);const profile=result<OnboardingSnapshot>(await r.actor.client.rpc('company_onboarding_read',{p_company_id:company}));const version=profile.state.profile_version;

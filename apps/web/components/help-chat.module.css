@@ -1,4 +1,4 @@
-.launcher{position:relative;flex-shrink:0;display:flex;align-items:center;gap:8px;border:1px solid #497572;background:#0c3939;color:#fff;border-radius:999px;padding:13px 18px;font:inherit;font-size:14px;font-weight:650;box-shadow:0 6px 22px #103b3929;cursor:pointer}
+.launcher{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:55;min-height:52px;flex-shrink:0;display:flex;align-items:center;gap:8px;border:1px solid #497572;background:#0c3939;color:#fff;border-radius:999px;padding:13px 18px;font:inherit;font-size:14px;font-weight:650;box-shadow:0 6px 22px #103b3929;cursor:pointer}
 .launcher:hover{background:#174b48}.launcher:focus-visible{outline:3px solid #b1f780;outline-offset:3px}
 .dialog:global(.modal-content){top:auto;left:auto;right:20px;bottom:20px;transform:none;width:min(430px,calc(100vw - 32px));height:min(690px,calc(100dvh - 40px));max-height:calc(100dvh - 40px);padding:22px 20px 12px;display:flex;flex-direction:column;gap:8px;overflow:hidden;border-radius:22px;background:#f7f8f3;color:#123a39}
 .dialog :global(.modal-title){font-size:22px;margin:0;padding-right:28px}.dialog :global(.modal-description){font-size:12px;margin:0;color:#5e7571;flex-shrink:0}
@@ -11,4 +11,4 @@
 @media(max-width:600px){.launcher{right:14px;bottom:max(14px,env(safe-area-inset-bottom));padding:12px;gap:6px}.launcher span{font-size:12px}.dialog:global(.modal-content){inset:0;transform:none;width:100%;height:100dvh;max-height:100dvh;border-radius:0;padding:calc(15px + env(safe-area-inset-top)) 16px calc(10px + env(safe-area-inset-bottom));border:0}.teamPanel{padding:16px}.bubble{max-width:96%}}
 @media(prefers-reduced-motion:reduce){.chat{scroll-behavior:auto}}
 
-@media(max-width:600px){.launcher{right:auto;bottom:auto;padding:9px}.launcher span{display:none}.launcher svg{width:18px;height:18px}}
+.aboveComposer{bottom:calc(90px + env(safe-area-inset-bottom))}@media(max-width:600px){.launcher{width:52px;height:52px;padding:0;justify-content:center}.launcher span{display:none}.launcher svg{width:23px;height:23px}.launcher.aboveComposer{bottom:calc(100px + env(safe-area-inset-bottom))}}

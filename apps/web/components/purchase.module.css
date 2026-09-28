@@ -41,3 +41,5 @@
 @media(max-width:680px) and (max-height:620px){.compactPlans .plan,.compactPlans .annual{padding:10px 14px}.compactPlans .planTop small{display:none}.compactPlans .planTop{font-size:13px;line-height:18px}.compactPlans h2{margin:8px 0 5px}.compactPlans .compactIncluded{padding:4px 0}}
 
 .headerActions{display:flex;align-items:center;gap:16px}.headerActions>button{padding:8px 12px;box-shadow:none;font-size:12px}.headerActions>button svg{width:17px;height:17px}
+
+.planFooter{padding-right:115px}.checkout{padding-bottom:90px}@media(max-width:600px){.planFooter{padding-right:65px}}

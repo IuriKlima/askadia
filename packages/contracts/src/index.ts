@@ -92,3 +92,5 @@ export * from './visual';
 export * from './ad-execution';
 export * from './commerce';
 export * from './support';
+
+export * from './journey-progress';

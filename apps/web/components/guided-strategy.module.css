@@ -4,3 +4,7 @@
 @media(max-width:680px){.compact>header h2{font-size:22px}.compact .steps{gap:6px}.compact .steps button{padding:8px;font-size:10px}.compact .guide{padding:13px}.compact .panel,.compact .limitations{padding:15px}.compact>header>p{font-size:11px}}
 
 .compact{gap:14px}.compact>header{margin-bottom:0}.compact .steps{grid-template-columns:repeat(5,minmax(0,1fr));margin:0}.compact .steps li{min-width:0}.compact .steps button{display:grid;overflow-wrap:anywhere}.compact .guide,.compact .panel,.compact .limitations{margin:0}.compact .approval{padding:18px;gap:16px}.compact .approval p{font-size:12px}
+
+.spinner{animation:strategy-spin 1.2s linear infinite;flex-shrink:0}@keyframes strategy-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.spinner{animation:none}}
+
+.root{padding-bottom:72px}
