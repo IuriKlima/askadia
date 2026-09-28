@@ -3,5 +3,6 @@ export function publicContact(){
  const rawPhone=process.env.PUBLIC_SALES_WHATSAPP?.replace(/\D/g,'')??'';
  const email=(value:string|undefined)=>value&&/^[^\s@?&#]+@[^\s@?&#]+\.[^\s@?&#]+$/.test(value)?value:'';
  const salesEmail=email(process.env.PUBLIC_CONTACT_EMAIL);
- return {whatsapp:/^\d{10,15}$/.test(rawPhone)?rawPhone:'',salesEmail,supportEmail:email(process.env.PUBLIC_SUPPORT_EMAIL)||salesEmail};
+ const supportPhone=process.env.PUBLIC_SUPPORT_WHATSAPP?.replace(/[\s()+-]/g,'')??'';
+ return {supportWhatsapp:/^[1-9]\d{10,14}$/.test(supportPhone)?supportPhone:'',whatsapp:/^\d{10,15}$/.test(rawPhone)?rawPhone:'',salesEmail,supportEmail:email(process.env.PUBLIC_SUPPORT_EMAIL)||salesEmail};
 }

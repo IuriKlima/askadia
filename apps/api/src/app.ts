@@ -1,3 +1,4 @@
+import {SupportController} from './support/controller';
 import {PurchaseController} from './billing/controller';
 import {AdExecutionController,AdExecutionWorker,AdPreparationWorker} from './campaigns/ad-execution';
 import {VisualJobs,VisualJobsController} from './ai/visual-jobs';
@@ -33,7 +34,7 @@ export class HealthController {
 }
 @Module({
   imports:[DashboardModule],
-  controllers:[PurchaseController,AdExecutionController,VisualJobsController,InstagramController,LaunchController,OverviewController,CompanySiteController,PublicSiteController,AdsController,MetaInboxController,CustomerHistoryController,ManagementController,ManagementIngestionController,CampaignsController,InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
+  controllers:[SupportController,PurchaseController,AdExecutionController,VisualJobsController,InstagramController,LaunchController,OverviewController,CompanySiteController,PublicSiteController,AdsController,MetaInboxController,CustomerHistoryController,ManagementController,ManagementIngestionController,CampaignsController,InboxController,ChannelsController,CalendarController,OnboardingController,HealthController,IdentityController,OperationsController],
   providers:[CompetitorResearchWorker,AdPreparationWorker,AdExecutionWorker,VisualJobs,InstagramMonitor,LaunchPreparation,ContentPreparation,ImageDescriptions,CampaignDelivery,InboxAutomation,IdentityService,AuthService,AuthGuard,{provide:AUTH_CONFIG,useFactory:()=>({url:process.env.SUPABASE_URL,key:(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY)})}],
 })
 export class AppModule {}

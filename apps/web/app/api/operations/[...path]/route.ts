@@ -3,8 +3,8 @@ import { serverSupabase } from '../../../../lib/auth/server';
 import { appOrigin,authConfigured } from '../../../../lib/auth/config';
 const uuid='[a-fA-F0-9-]{36}';
 const allowed:Record<string,RegExp[]>={
-  GET:[/^(me|plans|portfolio|staff)$/,new RegExp('^companies/'+uuid+'/(capabilities|delegations|assignments|drafts)$'),new RegExp('^access/'+uuid+'$')],
-  POST:[/^access$/,new RegExp('^access/'+uuid+'/end$'),new RegExp('^companies/'+uuid+'/(assignments|delegations|import)$')],
+  GET:[/^support\/(config|tickets)$/,new RegExp('^support/tickets/'+uuid+'$'),/^(me|plans|portfolio|staff)$/,new RegExp('^companies/'+uuid+'/(capabilities|delegations|assignments|drafts)$'),new RegExp('^access/'+uuid+'$')],
+  POST:[/^support\/tickets$/,new RegExp('^support/tickets/'+uuid+'/(reply|status)$'),/^access$/,new RegExp('^access/'+uuid+'/end$'),new RegExp('^companies/'+uuid+'/(assignments|delegations|import)$')],
 };
 async function forward(request:Request,context:{params:Promise<{path:string[]}>}){
   const path=(await context.params).path.join('/');
@@ -17,7 +17,7 @@ async function forward(request:Request,context:{params:Promise<{path:string[]}>}
   const {data}=await client.auth.getSession();
   if(!data.session)return NextResponse.json({message:'Sessão expirada.'},{status:401});
   const body=request.method==='GET'?undefined:await request.text();
-  if(body&&new TextEncoder().encode(body).byteLength>(path.endsWith('/import')?262144:16384))return NextResponse.json({message:'Solicitação muito grande.'},{status:413});
+  if(body&&new TextEncoder().encode(body).byteLength>(path.endsWith('/import')?262144:path==='support/tickets'?65536:16384))return NextResponse.json({message:'Solicitação muito grande.'},{status:413});
   const query=new URL(request.url).search;
   try{
     const response=await fetch((process.env.API_INTERNAL_URL||'http://127.0.0.1:4000')+'/operations/'+path+query,{

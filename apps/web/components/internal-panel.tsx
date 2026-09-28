@@ -1,4 +1,6 @@
 'use client';
+import {SupportTickets} from './support-tickets';
+import helpStyles from './help-chat.module.css';
 import {BrandWordmark} from './brand';
 
 import Link from 'next/link';
@@ -44,6 +46,7 @@ export function PortfolioPanel({admin,email}:{admin:boolean;email:string}){
       {!data.companies.length?<section className="panel internal-empty"><Building2 size={30}/><h2>Nenhuma empresa nesta seleção.</h2><p>{query?'Tente outro nome.':'A carteira aparece quando houver empresas e vínculos autorizados.'}</p></section>:<div className="tenant-company-grid">{data.companies.map(c=><article className="panel tenant-company-card" key={c.id}><div className="row"><Building2 size={22}/><span className="tag">{c.archived_at?'Arquivada':statusLabels[c.subscription_status]??c.subscription_status}</span></div><h2>{c.name}</h2><p>{c.workspace_name} · {c.city||'Cidade não informada'}</p><div className="tenant-company-role">{c.plan_id??'Sem plano'}{c.weekly_support?' · Acompanhamento contratado':''}</div><Button variant="outline" onClick={()=>{setTarget(c);setFormError('');}}>Abrir contexto<ArrowRight size={15}/></Button>{admin&&<Button variant="ghost" onClick={()=>setAssignment(c)}><Users size={15}/>Carteira</Button>}</article>)}</div>}
       <div className="internal-pagination"><Button variant="outline" disabled={!offset||loading} onClick={()=>setOffset(Math.max(0,offset-30))}>Anterior</Button><span>Página {Math.floor(offset/30)+1}</span><Button variant="outline" disabled={offset+30>=data.total||loading} onClick={()=>setOffset(offset+30)}>Próxima</Button></div>
     </>}
+    <section className={helpStyles.teamPanel}><h2>Central de chamados</h2><p>Responda aos clientes e acompanhe os pedidos da sua carteira. As respostas ficam disponíveis no chat de ajuda do cliente.</p><SupportTickets team/></section>
     <Modal open={Boolean(assignment)} onOpenChange={v=>{if(!v)setAssignment(null);}} title={"Carteira de "+(assignment?.name??"empresa")} description="Acesso restrito à equipe interna de acompanhamento.">{assignment&&<AssignmentEditor key={assignment.id} companyId={assignment.id}/>}</Modal>
     <Modal open={Boolean(target)} onOpenChange={value=>{if(!value&&!busy)setTarget(null);}} title={'Acessar '+(target?.name??'empresa')} description="Seu nome permanece na auditoria. A sessão dura até 30 minutos e pode ser encerrada antes."><form className="form" onSubmit={start}><label>Motivo do acesso<textarea name="reason" required minLength={8} maxLength={500} rows={3} placeholder="Ex.: revisar configuração com o cliente"/></label>{formError&&<p className="form-error" role="alert">{formError}</p>}<Button type="submit" disabled={busy}>{busy?'Abrindo…':'Abrir painel interno'}</Button></form></Modal>
   </main>;

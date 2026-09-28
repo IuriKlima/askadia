@@ -11,6 +11,7 @@ ENV API_INTERNAL_URL=http://127.0.0.1:4000
 # Checkout simulado autorizado para esta fase, sem cobrança real.
 # O ambiente do Easypanel pode sobrescrever com CHECKOUT_MODE=disabled.
 ENV CHECKOUT_MODE=test
+ENV PUBLIC_SUPPORT_WHATSAPP=5519993070799
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 CMD node -e "Promise.all([fetch('http://127.0.0.1:4000/health'),fetch('http://127.0.0.1:3000/login')]).then(r=>process.exit(r.every(x=>x.ok)?0:1)).catch(()=>process.exit(1))"

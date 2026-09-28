@@ -24,3 +24,7 @@ As conexões de mensagens Meta/TikTok, publicador automático e homologação de
 
 ## Campanhas e permissões Meta — 22/09/2026
 Commit 6189426 compilado e implantado; Easypanel registrou Success às 17:52 UTC. Migrações 202609220006–008 aplicadas com autorização explícita e RLS confirmada nas três tabelas públicas. Login HTTPS respondeu 200; campanhas e ingestão sem autenticação responderam 401. MESSAGE_CAMPAIGNS_ENABLED=true salvo após autorização específica do proprietário. Nenhuma campanha foi ativada para teste. Operação do consumidor pela interface ainda em conferência.
+
+## Ajuda e chamados — 28/09/2026
+
+Aplicar `202609280003_support_chat.sql` depois das migrações anteriores. Reimplantar API/web para disponibilizar a central interna e o chat de ajuda. A imagem declara `PUBLIC_SUPPORT_WHATSAPP=5519993070799`, número público informado pelo responsável. O ambiente do Easypanel tem precedência. Teste a consulta de ajuda, o link WhatsApp sem enviar mensagem e um chamado de homologação em empresa de teste. Respostas são feitas em `/admin` ou `/acompanhamento/carteira`, conforme a carteira da equipe interna. Ver `docs/ajuda-e-chamados-2026-09-28.md`.
