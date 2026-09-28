@@ -286,3 +286,16 @@ Consulta remota de leitura confirmou as tabelas anteriores e a ausência das cin
 Detalhes, limites e roteiro de implantação: docs/trafego-execucao-2026-09-27.md. Publicador social, outros objetivos/tipos de anúncio, homologação real dos conectores, configurações externas de cobrança/e-mail e acessos pendentes não devem ser anunciados como prontos.
 
 Validação final desta execução: pnpm check passou integralmente, com lint, tipos, 236 testes em 27 arquivos e builds API/worker/Next. Os 16 cenários de anúncios incluem duração mínima Google de três dias no contrato e banco, região/palavras-chave alteradas remotamente e distinção entre elegibilidade e entrega comprovada. Correção textual da proposta verificada por lint após a suíte. git diff --check limpo; 81 arquivos sem valores secretos do .env. Prévia encerrada e abas de acesso preservadas para continuação. Nenhuma migração remota, push, deploy, criação de anúncio real ou gasto com mídia.
+
+
+## Aquisição imersiva e planos por empresa — 27/09/2026
+
+Implementados /planos, Começar grátis, boas-vindas com viagem espacial, entrevista em tela cheia, transição de ferramentas de sete segundos, escolha de plano e checkout explicitamente simulado. Anual confirmado pelo usuário: 12 parcelas de R$ 998, total R$ 11.976; mensal recorrente R$ 1.497, por empresa, mesmos recursos. Evolution preservada.
+
+A IA só começa com assinatura válida ou aprovação do checkout de teste. Migração 202609270003 fixa preços, mantém estados idempotentes/expiração, protege confirmação por service_role, separa acesso de teste de assinatura real e bloqueia rotas e filas de IA antes do pagamento. Teste libera sete dias, sem cartão/cobrança. Recusa e cancelamento preservam briefing. O sistema retoma pelo estado persistido e exige cinco aprovações atuais antes de liberar o painel. Autorização da empresa permanece no servidor e banco.
+
+Corrigido encaminhamento web ausente das rotas de jornada, Instagram, imagens e anúncios. Retornos OAuth retomam onboarding e preservam empresa ao limpar meta_session. Planos antigos permanecem no catálogo para compatibilidade de assinaturas existentes. Detalhamento e condições de implantação: docs/aquisicao-planos-2026-09-27.md.
+
+Validação PostgreSQL de pagamento, isolamento, filas sem consumo, parcelas, expiração e autorização aprovada. Revisão UI em fixture sem provedores: boas-vindas, resumo, transição, planos, recusa e aprovação até a estratégia. Verificada largura 390 px sem overflow. Rodada final pnpm check em execução. Nenhuma migração remota, deploy, pagamento, envio ou geração paga nesta etapa.
+
+Validação final da aquisição: pnpm check passou (lint, tipos, 242 testes em 29 arquivos, builds API/worker/Next). Após a revisão, adicionados refresh de sessão em /comecar, fallback do nome nos metadados do cadastro e revogação explícita de privilégios na tabela privada de acesso simulado. Rechecagem dirigida concluída: 11 testes de banco/proxy, novo build web e lint passaram. Verificação dos arquivos alterados não encontrou valores secretos do ambiente; git diff --check limpo. Sem chamadas externas, migração remota ou deploy.

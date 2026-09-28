@@ -13,7 +13,7 @@ export default function HomePage() {
         <span className={s.eyebrow}><span className={s.dot}/>MARKETING COM IA PARA ACADEMIAS</span>
         <h1>Sua academia tem potencial.<br/><span>Dê direção ao seu marketing.</span></h1>
         <p>Transforme seus diferenciais em uma estratégia clara, conteúdo com a sua marca e conversas bem acompanhadas. Tudo em um só lugar, com a inteligência da Askadia.</p>
-        <div className={s.actions}><Link className={s.primary} href={signupHref}>Começar com minha academia <ArrowRight size={18}/></Link><a className={s.textLink} href="#como-funciona">Veja como funciona <ArrowRight size={16}/></a></div>
+        <div className={s.actions}><Link className={s.primary} href={signupHref}>Começar grátis <ArrowRight size={18}/></Link><a className={s.textLink} href="#como-funciona">Veja como funciona <ArrowRight size={16}/></a></div>
         <p className={s.microcopy}>Comece pelo cadastro. Sem cobrança automática.</p>
       </div>
       <ProductPreview/>
@@ -37,6 +37,7 @@ export default function HomePage() {
         <div><span className={s.eyebrow}>UMA JORNADA. CADA ETAPA NO SEU LUGAR.</span><h2>Você conhece sua academia.<br/><span>A Askadia transforma isso em direção.</span></h2><p>O ponto de partida é uma conversa. Depois, você acompanha a preparação e decide o que segue adiante.</p><Link href={signupHref} className={s.lightButton}>Dar o primeiro passo <ArrowRight size={17}/></Link></div>
         <ol className={s.steps}>{[
           ['Conte a sua história', 'Apresente modalidades, público, objetivos, fotos e identidade visual.'],
+          ['Escolha seu plano', 'Depois da conversa gratuita, confirme seu plano para liberar a IA.'],
           ['Revise a estratégia', 'Receba uma proposta com posicionamento, temas e ações para sua academia.'],
           ['Dê vida ao calendário', 'Acompanhe textos e artes, grave os roteiros e envie os vídeos editados.'],
           ['Aprove e acompanhe', 'Revise cada peça e organize as próximas ações com a sua equipe.'],

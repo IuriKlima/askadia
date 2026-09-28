@@ -1,3 +1,4 @@
+import {paidCompanyFixture} from './helpers/paid-company';
 import {afterAll,afterEach,beforeAll,describe,expect,it,vi} from 'vitest';
 import {PGlite} from '@electric-sql/pglite';
 import {readFileSync,readdirSync} from 'node:fs';
@@ -22,7 +23,7 @@ describe('Ad scheduling database security and durable execution',()=>{
  for(let stage=1;stage<=5;stage++)await db.query("insert into public.company_marketing_approvals(company_id,profile_version,stage,basis,snapshot,approved_by) values($1,1,$2,md5(private.journey_basis($1,$2)::text),'{}',$3)",[company,stage,owner]);
  await db.query("insert into public.company_members(company_id,user_id,role) values($1,$2,'marketing')",[company,marketer]);await db.query("insert into public.company_ad_connections(company_id,provider,account_id,name,source_page,status) values($1,'meta','act_123456789','Fixture','987654321','connected')",[company]);
  const path=company+'/onboarding/'+image+'.png';await db.query("insert into storage.objects(bucket_id,name) values('company-assets',$1)",[path]);await db.query("insert into public.onboarding_attachments(id,company_id,name,mime,size,object_path,uploaded_by) values($1,$2,'Fixture','image/png',10,$3,$4)",[image,company,path,owner]);
- await as(owner);plan=randomUUID();await scalar('select public.begin_paid_plan($1,$2,200,7)',[company,plan]);await server();await scalar('select public.finish_paid_plan_server($1,$2,$3,$4,$5)',[company,owner,plan,{summary:'Fixture',campaigns:[{name:'Academia fixture',provider:'meta',investment:100}],unknowns:[]},'fixture']);await as(owner);execution=await scalar<string>('select id from public.company_ad_executions where plan_id=$1',[plan]);
+ await paidCompanyFixture(db,company);await as(owner);plan=randomUUID();await scalar('select public.begin_paid_plan($1,$2,200,7)',[company,plan]);await server();await scalar('select public.finish_paid_plan_server($1,$2,$3,$4,$5)',[company,owner,plan,{summary:'Fixture',campaigns:[{name:'Academia fixture',provider:'meta',investment:100}],unknowns:[]},'fixture']);await as(owner);execution=await scalar<string>('select id from public.company_ad_executions where plan_id=$1',[plan]);
  },120000);
  afterAll(async()=>{await db?.close();});
  it('enforces Google total budget minimum in both API contract and database',async()=>{

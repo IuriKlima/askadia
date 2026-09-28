@@ -30,10 +30,10 @@ export function AuthPanel({configured,callbackError=false,update=false,initialMo
     {mode!=='update' && <label>E-mail<input name="email" type="email" required autoComplete="email" placeholder="voce@empresa.com.br"/></label>}
     {mode!=='recover' && <label>Senha<input name="password" type="password" required minLength={mode==='login'?1:12} maxLength={128} autoComplete={mode==='login'?'current-password':'new-password'} placeholder={mode==='login'?'Sua senha':'Pelo menos 12 caracteres'}/></label>}
     {mode==='login' && <button type="button" className="text-button auth-recover" onClick={()=>change('recover')}>Esqueci minha senha</button>}
-    <Button type="submit">{pending?'Aguarde…':mode==='signup'?'Criar meu acesso':mode==='recover'?'Enviar instruções':mode==='update'?'Salvar nova senha':'Entrar no meu espaço'}<ArrowRight size={16}/></Button>
+    <Button type="submit">{pending?'Aguarde…':mode==='signup'?'Começar grátis':mode==='recover'?'Enviar instruções':mode==='update'?'Salvar nova senha':'Entrar no meu espaço'}<ArrowRight size={16}/></Button>
   </fieldset></form>
   {message && <p className={error?'form-error':'auth-message'} role={error?'alert':'status'}>{message}</p>}
-  {!update && <div className="auth-switch">{mode==='login'?<>Ainda não tem acesso? <button onClick={()=>change('signup')}>Criar conta</button></>:<button onClick={()=>change('login')}>Voltar para entrar</button>}</div>}
+  {!update && <div className="auth-switch">{mode==='login'?<>Ainda não tem acesso? <button onClick={()=>change('signup')}>Começar grátis</button></>:<button onClick={()=>change('login')}>Voltar para entrar</button>}</div>}
   <Link className="auth-preview" href="/preview">Explorar a prévia local<ArrowUpRight size={14}/></Link>
   <p className="fine-print">A prévia local usa rascunhos de teste. Ela não transfere dados automaticamente para sua conta.</p>
   </div><div className="auth-bottom">PENSADO PARA CRESCER COM VOCÊ.</div></section></main>;

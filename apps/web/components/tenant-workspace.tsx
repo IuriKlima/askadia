@@ -84,7 +84,7 @@ export function TenantWorkspace({userId,email,staffRole}:{userId:string;email:st
     setTeam(null);setWorkspaceId(nextWorkspace);setCompanyId(nextCompany);setModal(null);setInviteLink('');setError('');
     try{localStorage.setItem(storage,JSON.stringify(selection.current));}catch{/* The selector can remain in memory when storage is unavailable. */}
   }
-  async function beginCompany(){if(beginBusy.current)return;beginBusy.current=true;setBusy(true);setError('');beginRequest.current??=crypto.randomUUID();try{const r=await journeyApi<{companyId:string}>('companies',{requestId:beginRequest.current,workspaceId:workspaceId||null});window.location.assign('/empresa/'+r.companyId+'/onboarding');}catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar.');setBusy(false);beginBusy.current=false;}}
+  async function beginCompany(){if(beginBusy.current)return;beginBusy.current=true;setBusy(true);setError('');beginRequest.current??=crypto.randomUUID();try{const r=await journeyApi<{companyId:string}>('companies',{requestId:beginRequest.current,workspaceId:workspaceId||null});window.location.assign('/comecar?empresa='+r.companyId);}catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar.');setBusy(false);beginBusy.current=false;}}
   function open(value:ModalType,record?:CompanyRecord){setFormError('');setNotice('');setInviteLink('');setTarget(record??null);setModal(value);}
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();setBusy(true);setFormError('');

@@ -1,3 +1,4 @@
+import {paidCompanyFixture} from './helpers/paid-company';
 import {afterAll,beforeAll,describe,expect,it} from 'vitest';
 import {PGlite} from '@electric-sql/pglite';
 import {readFileSync,readdirSync} from 'node:fs';
@@ -63,6 +64,7 @@ describe('Company journey: persistent transactions and authorized isolation',()=
   const id=randomUUID(),path=a+'/onboarding/'+id+'.png';await db.query("insert into storage.objects(bucket_id,name) values('company-assets',$1)",[path]);const attachment=await scalar<{id:string}>('select public.record_onboarding_attachment($1,$2,$3,$4,$5,$6)',[a,id,'logo.png','image/png',128,path]);expect(attachment.id).toBe(id);expect((await read()).attachments).toHaveLength(1);await expect(scalar('select public.record_onboarding_attachment($1,$2,$3,$4,$5,$6)',[b,randomUUID(),'other.png','image/png',128,path])).rejects.toThrow();await expect(scalar('select public.record_onboarding_attachment($1,$2,$3,$4,$5,$6)',[a,randomUUID(),'missing.png','image/png',128,a+'/onboarding/missing.png'])).rejects.toThrow();
  });
  it('enforces disabled allowances, daily ceilings and duplicate usage prevention',async()=>{
+ await paidCompanyFixture(db,a);
   await db.exec('reset role');await db.query("update public.onboarding_provider_limits set daily_calls=0 where company_id=$1 and kind='interpretation'",[a]);await as(users.marketing);
   expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,randomUUID(),'interpretation'])).toBe(false);await db.exec('reset role');await db.query("update public.onboarding_provider_limits set daily_calls=1 where company_id=$1 and kind='interpretation'",[a]);await as(users.marketing);const request=randomUUID();expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,request,'interpretation'])).toBe(true);expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,request,'interpretation'])).toBe(false);expect(await scalar('select public.reserve_onboarding_provider($1,$2,$3)',[a,randomUUID(),'interpretation'])).toBe(false);
  });

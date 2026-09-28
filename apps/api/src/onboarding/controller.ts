@@ -4,7 +4,7 @@ import {preferredContactName,meaningfulContactName} from '../inbox/contact-name'
 import {generateStrategy} from './strategy';
 import { BadRequestException, ServiceUnavailableException, Body, Controller, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
-import { strategyOutputSchema,beginCompanySchema,normalizePhone,guidedAnswers,onboardingReplySchema,profilePatchSchema,type OnboardingSnapshot,type PlaceSearchResult } from '@askadia/contracts';
+import { strategyOutputSchema,beginCompanySchema,normalizePhone,guidedAnswers,onboardingReplySchema,profilePatchSchema,type PurchaseState,type OnboardingSnapshot,type PlaceSearchResult } from '@askadia/contracts';
 import { AuthGuard,type AuthRequest,type AuthenticatedActor } from '../identity/auth';
 import { result } from '../identity/service';
 import { extractWebsite,publicWebsiteUrl,interpret,interpreterConfigured,places } from './providers';
@@ -12,7 +12,9 @@ const uuid=(v:string)=>{const parsed=z.uuid().safeParse(v);if(!parsed.success)th
 function parse<T>(schema:z.ZodType<T>,body:unknown):T{const r=schema.safeParse(body);if(!r.success)throw new BadRequestException('Revise os dados enviados.');return r.data;}
 async function snapshot(actor:AuthenticatedActor,id:string){
  const state=result<OnboardingSnapshot>(await actor.client.rpc('company_onboarding_read',{p_company_id:id}));
- return {...state,question:currentQuestion(state),provider:{mode:interpreterConfigured()?'configured' as const:'guided' as const,message:interpreterConfigured()?'Interpretação por IA sujeita ao limite autorizado da empresa. Todas as informações passam pela sua confirmação.':'Conversa guiada: a interpretação por IA ainda depende de configuração. Suas respostas continuam sendo salvas.'}};
+ const purchase=result<PurchaseState>(await actor.client.rpc('company_purchase_state',{p_company_id:id}));
+ const enabled=purchase.aiAllowed&&interpreterConfigured();
+ return {...state,question:currentQuestion(state),provider:{aiAllowed:purchase.aiAllowed,mode:enabled?'configured' as const:'guided' as const,message:enabled?'A IA ajuda a interpretar. Confira suas informações antes de confirmar.':!purchase.aiAllowed?'Conversa gratuita: suas respostas ficam salvas. A IA começa após a confirmação do plano.':'Conversa guiada: a interpretação por IA depende de configuração.'}};
 }
 function currentQuestion(state:OnboardingSnapshot){return state.step==='identity'&&state.state.facts.city?.status==='provided'?'Qual é o nome do seu negócio?':state.question;}
 async function reserve(actor:AuthenticatedActor,id:string,requestId:string,kind:string){const value=await actor.client.rpc('reserve_onboarding_provider',{p_company_id:id,p_request_id:requestId,p_kind:kind});if(value.error?.message==='Daily account allowance exhausted')return false;return result<boolean>(value);}
@@ -27,7 +29,7 @@ export class OnboardingController {
   const current=await snapshot(req.actor,id);let answers=input.answers;let source='user';let providerMessage=current.provider.message;
   if(input.action==='reply'){
    answers={...guidedAnswers(current.step,input.message),...answers};
-   if(interpreterConfigured()&&current.state.revision===input.revision){
+   if(current.provider.aiAllowed&&interpreterConfigured()&&current.state.revision===input.revision){
     const reserved=await reserve(req.actor,id,input.requestId,'interpretation');
     if(reserved){try{const interpreted=await interpret(current,input.message);answers={...answers,...interpreted.answers,...input.answers};source=Object.keys(interpreted.answers).length?'assistant_suggestion':'user';await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'interpretation',p_outcome:interpreted.outcome,p_usage:interpreted.usage});if(interpreted.outcome!=='completed')providerMessage='A IA não interpretou esta resposta. Ela foi salva pela conversa guiada.';}catch{providerMessage='A IA está indisponível. Sua resposta foi salva pela conversa guiada.';await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'interpretation',p_outcome:'failed'});}}
     else providerMessage='Limite de interpretação por IA indisponível. Sua resposta foi salva pela conversa guiada.';

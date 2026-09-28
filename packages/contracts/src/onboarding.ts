@@ -32,7 +32,7 @@ export function onboardingStep(s:OnboardingState):string{
 export function missingEssentials(facts:ProfileFacts){return essentialKeys.filter(k=>facts[k]?.status!=='provided'||!facts[k]?.value?.trim());}
 export type OnboardingMessage={id:string;role:'user'|'assistant';body:string;created_at:string;actor_id:string|null;request_id:string|null};
 export type OnboardingAttachment={id:string;company_id:string;name:string;mime:string;size:number;object_path:string;created_at:string};
-export type OnboardingSnapshot={state:OnboardingState;messages:OnboardingMessage[];attachments:OnboardingAttachment[];capabilities:{actions:string[]};confirmedProfile:{version:number;facts:ProfileFacts;confirmed_at:string}|null;provider:{mode:'guided'|'configured';message:string};step:string;question:string};
+export type OnboardingSnapshot={state:OnboardingState;messages:OnboardingMessage[];attachments:OnboardingAttachment[];capabilities:{actions:string[]};confirmedProfile:{version:number;facts:ProfileFacts;confirmed_at:string}|null;provider:{mode:'guided'|'configured';message:string;aiAllowed?:boolean};step:string;question:string};
 export type PlaceOption={id:string;name:string;address:string;latitude:number|null;longitude:number|null;url:string;attributions:{displayName:string;uri:string}[]};
 export type PlaceSearchResult={status:'available'|'unconfigured'|'unavailable';places:PlaceOption[];message:string;radius:number|null;center?:{latitude:number;longitude:number};mapKey?:string};
 

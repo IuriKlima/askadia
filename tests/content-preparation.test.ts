@@ -1,3 +1,4 @@
+import {paidCompanyFixture} from './helpers/paid-company';
 import {afterAll,beforeAll,describe,expect,it} from 'vitest';
 import {PGlite} from '@electric-sql/pglite';
 import {readFileSync,readdirSync} from 'node:fs';
@@ -19,7 +20,7 @@ describe('Durable content preparation without automatic approval',()=>{
  await as(owner);company=(await scalar<{companyId:string}>('select public.begin_company_onboarding($1)',[randomUUID()])).companyId;
  await as(other);otherCompany=(await scalar<{companyId:string}>('select public.begin_company_onboarding($1)',[randomUUID()])).companyId;
  await as(owner);await db.exec('reset role');await db.query("insert into public.company_profile_versions(company_id,version,facts,confirmed_by) values($1,1,'{}',$2)",[company,owner]);await db.query('update public.company_onboarding set profile_version=1,confirmed_revision=revision where company_id=$1',[company]);
- },120000);
+ await paidCompanyFixture(db,company);},120000);
  afterAll(async()=>{await db?.close();});
  it('queues confirmation once and denies foreign tenants and client worker calls',async()=>{
   await as(owner);expect(await scalar('select count(*)::int from public.company_content_preparations where company_id=$1',[company])).toBe(1);

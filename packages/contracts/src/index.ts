@@ -90,3 +90,4 @@ export * from './instagram';
 export * from './visual';
 
 export * from './ad-execution';
+export * from './commerce';

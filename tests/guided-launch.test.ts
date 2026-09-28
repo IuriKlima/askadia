@@ -1,3 +1,4 @@
+import {paidCompanyFixture} from './helpers/paid-company';
 import {afterAll,beforeAll,describe,expect,it} from 'vitest';
 import {PGlite} from '@electric-sql/pglite';
 import {readFileSync,readdirSync} from 'node:fs';
@@ -20,7 +21,7 @@ describe('Guided approvals, durable preparation and tenant boundaries',()=>{
  await as(owner);company=(await scalar<{companyId:string}>('select public.begin_company_onboarding($1)',[randomUUID()])).companyId;
  await as(other);otherCompany=(await scalar<{companyId:string}>('select public.begin_company_onboarding($1)',[randomUUID()])).companyId;
  await as(owner);await db.exec('reset role');await db.query("insert into public.company_profile_versions(company_id,version,facts,confirmed_by) values($1,1,'{}',$2)",[company,owner]);await db.query('update public.company_onboarding set profile_version=1,confirmed_revision=revision where company_id=$1',[company]);
- },120000);
+ await paidCompanyFixture(db,company);},120000);
 
  afterAll(async()=>{await db?.close();});
  it('queues work but requires reviewed competitors before diagnosis and all approvals before production',async()=>{
@@ -33,7 +34,7 @@ describe('Guided approvals, durable preparation and tenant boundaries',()=>{
  });
  it('approves each version in order and creates no site until stage five',async()=>{
   await as(owner);await approve(2);await server();let j=await scalar<Job|null>('select public.claim_company_launch_server()');if(!j)j=await scalar<Job|null>('select public.claim_company_launch_server()');expect(j?.kind).toBe('recommendations');expect(await scalar('select public.finish_company_launch_server($1,$2,$3)',[j!.id,j!.token,recommendations])).toBe(true);
-  await as(owner);const oldBasis=(await journey()).stages[2]!.basis;await approve(3);await approve(4);await expect(scalar('select public.approve_marketing_stage($1,5,$2)',[company,oldBasis])).rejects.toThrow('changed');await approve(5);expect((await journey()).stages.every(s=>s.approved)).toBe(true);
+  await as(owner);const oldBasis=(await journey()).stages[2]!.basis;await approve(3);await approve(4);await expect(scalar('select public.approve_marketing_stage($1,5,$2)',[company,oldBasis])).rejects.toThrow('changed');await approve(5);expect((await journey()).stages.every(s=>s.approved)).toBe(true);expect(await scalar('select public.finish_company_setup($1)',[company])).toMatchObject({setupComplete:true,aiAllowed:true});
   await server();const site=await scalar<Job>('select public.claim_company_launch_server()');expect(site.kind).toBe('site');await as(owner);const content={name:'Teste',headline:'Seu treino',intro:'',about:'',services:[],address:'',hours:'',offer:'',whatsapp:'',cta:'',color:'#123456',background:'light',images:[],logo:null};await scalar('select public.save_company_site($1,0,1,$2)',[company,content]);await server();expect(await scalar('select public.finish_company_launch_server($1,$2,$3)',[site.id,site.token,{...content,headline:'Substituição indevida'}])).toBe(false);await as(owner);expect(await scalar("select draft->>'headline' from public.company_sites where company_id=$1",[company])).toBe('Seu treino');expect(await scalar('select published from public.company_sites where company_id=$1',[company])).toBeNull();
  });
  it('produces only the next week, requires individual approval and rejects obsolete completions',async()=>{

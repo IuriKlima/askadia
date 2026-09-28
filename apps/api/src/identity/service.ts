@@ -1,9 +1,10 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { HttpException, BadRequestException, ConflictException, ForbiddenException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import type { AuthenticatedActor } from './auth';
 import type { CompanyRole } from '@askadia/contracts';
 import type { PostgrestError } from '@supabase/supabase-js';
 export function result<T>(value:{data:T|null;error:PostgrestError|null}):T {
   if(value.error){
+    if(value.error.code==='P0402')throw new HttpException('Escolha e confirme um plano para liberar o processamento com IA desta empresa.',402);
     if(value.error.code==='42501') throw new ForbiddenException('Você não tem permissão para esta ação ou o acesso não está mais disponível.');
     if(value.error.message==='Daily account allowance exhausted') throw new BadRequestException('O limite diário de IA desta conta foi atingido. Tente novamente no próximo dia.');
     if(value.error.message==='Strategy usage allowance unavailable') throw new BadRequestException('O limite de geração de estratégia desta empresa precisa ser habilitado pela administração.');
