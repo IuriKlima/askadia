@@ -4,5 +4,5 @@ import { loadEnvFile } from 'node:process';
 import { resolve } from 'node:path';
 const rootEnv=resolve(process.cwd(),'../../.env');
 if(existsSync(rootEnv)) loadEnvFile(rootEnv);
-const config:NextConfig={transpilePackages:['@askadia/ui'],poweredByHeader:false};
+const config:NextConfig={transpilePackages:['@askadia/ui'],poweredByHeader:false,experimental:{proxyClientMaxBodySize:'51mb'}};
 export default config;

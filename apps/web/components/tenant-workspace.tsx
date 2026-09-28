@@ -3,7 +3,7 @@ import {HelpChat} from './help-chat';
 import {BrandWordmark} from './brand';
 
 import Link from 'next/link';
-import {readApiResponse} from '../lib/response';
+import {identityApi as api} from '../lib/identity-api';
 import { journeyApi } from '../lib/journey-api';
 import { CompanyPlan } from './company-plan';
 import { DraftImportPanel } from './draft-import';
@@ -12,11 +12,6 @@ import { useCallback,useEffect,useRef,useState,type FormEvent } from 'react';
 import { Archive,ArrowRight,ArrowUpRight,Building2,Check,ChevronDown,Copy,FileText,LogOut,Plus,RefreshCw,Settings2,ShieldCheck,Users,X,Menu,CreditCard } from 'lucide-react';
 import { Button,Modal } from '@askadia/ui';
 import { companyRoles,roleLabels,type CompanyRecord,type CompanyTeam,type IdentitySnapshot,type MemberRecord } from '@askadia/contracts';
-async function api<T>(path='',method='GET',body?:unknown,signal?:AbortSignal):Promise<T>{
-  const response=await fetch('/api/identity'+(path?'/'+path:''),{method,headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store',signal});
-  if(response.status===401)window.location.assign('/login');
-  return readApiResponse<T>(response);
-}
 const segmentLabels={gym:'Academia',studio:'Estúdio',other:'Outro'};
 type ModalType='workspace'|'company'|'edit'|'invite'|'member'|'archive'|'accept'|null;
 const auditLabels:Record<string,string>={'company.created':'Empresa criada','company.updated':'Perfil da empresa atualizado','member.invited':'Convite criado','member.joined':'Convite aceito','member.removed':'Membro removido','member.role_changed':'Permissão alterada','invitation.revoked':'Convite revogado','company.export_requested':'Exportação de perfil solicitada'};
