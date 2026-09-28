@@ -112,3 +112,7 @@ Implementados localmente: preparação de propostas após a estratégia, criaç�
 
 ### 27/09/2026 — Aquisição e planos
 Jornada gratuita antes da IA, checkout simulado por empresa e revisão em cinco etapas implementados localmente. Novos planos: mensal R$ 1.497; anual 12 parcelas de R$ 998 (total R$ 11.976). A instrução posterior do usuário prevalece sobre os valores anteriores. Ver docs/aquisicao-planos-2026-09-27.md e docs/progress.md. Migração 202609270003 e implantação remota pendentes; nenhuma cobrança real.
+
+## Atualização de 28/09/2026 — chat e ofertas
+
+Onboarding de aquisição convertido em conversa em tela cheia, com campo fixo e sem rolagem externa. Mensal atualizado para R$ 1.597; semestral substitui o anual nas novas ofertas: R$ 8.000 em até seis parcelas no cartão, com ajuste de centavos na última parcela. Implementação Assistida de R$ 3.500 anunciada como brinde para os 100 primeiros clientes. Checkout continua simulado, sem reserva real de brinde. Migração incremental 202609280001; veja docs/progress.md para validação e implantação. Esta instrução posterior substitui os preços registrados em 27/09.

@@ -4,7 +4,7 @@ vi.mock('../apps/web/lib/auth/server',()=>({serverSupabase:async()=>({auth:{getU
 vi.mock('../apps/web/lib/auth/config',()=>({appOrigin:()=> 'https://example.test',authConfigured:()=>true}));
 import {GET,POST} from '../apps/web/app/api/onboarding/[...path]/route';
 const company='10000000-0000-4000-8000-000000000001',execution='20000000-0000-4000-8000-000000000001';
-const request=(method:string,path:string,origin='https://example.test')=>new Request('https://example.test/api/onboarding/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},...(method==='POST'?{body:JSON.stringify({requestId:execution,planId:'askadia_annual'})}:{})});
+const request=(method:string,path:string,origin='https://example.test')=>new Request('https://example.test/api/onboarding/'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},...(method==='POST'?{body:JSON.stringify({requestId:execution,planId:'askadia_semiannual'})}:{})});
 const context=(path:string)=>({params:Promise.resolve({path:path.split('/')})});
 afterEach(()=>{vi.unstubAllGlobals();auth.user=true;});
 describe('Authenticated browser bridge for checkout and guided marketing',()=>{

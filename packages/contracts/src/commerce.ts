@@ -1,9 +1,12 @@
 export const commercePlans=[
- {id:'askadia_monthly',name:'Mensal',installmentCents:149700,installments:1,totalCents:149700,commitmentMonths:1,description:'Liberdade para acompanhar o ritmo da sua empresa.'},
- {id:'askadia_annual',name:'Anual',installmentCents:99800,installments:12,totalCents:1197600,commitmentMonths:12,description:'Um ano de direção para construir o próximo capítulo.'},
+ {id:'askadia_monthly',name:'Mensal',installmentCents:159700,installments:1,totalCents:159700,commitmentMonths:1,description:'Liberdade para acompanhar o ritmo da sua empresa.'},
+ {id:'askadia_semiannual',name:'Semestral',installmentCents:133333,installments:6,totalCents:800000,commitmentMonths:6,description:'Seis meses de direção para construir resultados consistentes.'},
 ] as const;
+export const commercePlanIds=['askadia_monthly','askadia_semiannual'] as const;
+export const assistedImplementation={priceCents:350000,giftLimit:100} as const;
+export function installmentAmounts(totalCents:number,count:number){const regular=Math.floor(totalCents/count);return {regular,last:totalCents-regular*(count-1)};}
 export type CommercePlanId=typeof commercePlans[number]['id'];
-export type Checkout={id:string;company_id:string;plan_id:CommercePlanId;status:'pending'|'test_approved'|'declined'|'cancelled';mode:'test';installment_cents:number;installments:number;total_cents:number;expires_at:string};
+export type Checkout={id:string;company_id:string;plan_id:CommercePlanId|'askadia_annual';status:'pending'|'test_approved'|'declined'|'cancelled';mode:'test';installment_cents:number;installments:number;total_cents:number;expires_at:string};
 export type PurchaseState={companyId:string;aiAllowed:boolean;accessMode:'live'|'test'|'none';testUntil:string|null;planId:string|null;onboardingComplete:boolean;setupComplete:boolean;canPurchase:boolean;canWrite:boolean;latestCheckout:Checkout|null;testCheckoutEnabled?:boolean};
 export const commerceFeatures=[
  ['Estratégia com direção','Diagnóstico do negócio e planos de curto, médio e longo prazo, conectados às metas da sua empresa.'],
