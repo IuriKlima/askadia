@@ -3,6 +3,7 @@ import {HelpChat} from './help-chat';
 import Link from 'next/link';
 import {CompanyChannels} from './company-channels';
 import {OnboardingPlaces} from './onboarding-places';
+import {OnboardingQuestionnaire} from './onboarding-questionnaire';
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { ArrowUp,Paperclip,Check,RefreshCw,MessageCircle,ClipboardList,ArrowLeft,UserRound,CheckCheck } from 'lucide-react';
 import { Button } from '@askadia/ui';
@@ -20,7 +21,7 @@ export function OnboardingChat({companyId,readOnly=false,summaryOnly=false,immer
  const load=useCallback(async(signal?:AbortSignal)=>{const r=await journeyApi<OnboardingSnapshot>('companies/'+companyId,undefined,signal);if(!signal?.aborted&&alive.current)setData(r);},[companyId]);
  useEffect(()=>{alive.current=true;const c=new AbortController();load(c.signal).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>{alive.current=false;c.abort();};},[load]);
  useEffect(()=>{if(!immersive)return;const resize=()=>viewport.current?.style.setProperty('--chat-height',(window.visualViewport?.height??window.innerHeight)+'px');resize();window.visualViewport?.addEventListener('resize',resize);window.addEventListener('resize',resize);return()=>{window.visualViewport?.removeEventListener('resize',resize);window.removeEventListener('resize',resize);};},[immersive]);
- useEffect(()=>{if(!data)return;const frame=requestAnimationFrame(()=>{if(showSummary){scroller.current?.scrollTo({top:0});return;}if(immersive&&scroller.current&&end.current){const container=scroller.current;container.scrollTo({top:end.current.getBoundingClientRect().top-container.getBoundingClientRect().top+container.scrollTop-24,behavior:'auto'});}else end.current?.scrollIntoView({block:'nearest',behavior:'smooth'});});return()=>cancelAnimationFrame(frame);},[data,showSummary,immersive]);
+ useEffect(()=>{if(!data||immersive)return;const frame=requestAnimationFrame(()=>{if(showSummary){scroller.current?.scrollTo({top:0});return;}if(immersive&&scroller.current&&end.current){const container=scroller.current;container.scrollTo({top:end.current.getBoundingClientRect().top-container.getBoundingClientRect().top+container.scrollTop-24,behavior:'auto'});}else end.current?.scrollIntoView({block:'nearest',behavior:'smooth'});});return()=>cancelAnimationFrame(frame);},[data,showSummary,immersive]);
  useEffect(()=>{if(!immersive||!answer.current)return;answer.current.style.height='auto';answer.current.style.height=Math.min(answer.current.scrollHeight+2,112)+'px';},[text,immersive]);
  async function send(message:string,action:typeof onboardingActions[number]='reply',answers:Partial<Record<ProfileKey,FactInput>>={}){
   if(!data||lock.current||readOnly)return false;lock.current=true;setBusy(true);setError('');
@@ -33,7 +34,7 @@ export function OnboardingChat({companyId,readOnly=false,summaryOnly=false,immer
 
  const stage=data?.step==='complete'?5:!data?.state.location_confirmed?0:!data.state.competitors_reviewed?1:!data.state.references_reviewed?2:data.step==='review'?4:3;
  const stepNames=['Localização','Concorrentes','Referências','Seu negócio','Confirmação'];
- if(!data)return <section ref={viewport} className={immersive?chat.loading:'panel internal-empty'} role={error?'alert':'status'}><BrandMark/><p>{error||'Retomando a conversa…'}</p>{error&&<Button onClick={()=>{setError('');void load().catch(e=>setError(e.message));}}>Tentar novamente</Button>}</section>;
+ if(!data)return <section ref={viewport} className={immersive?chat.loading:'panel internal-empty'} role={error?'alert':'status'}><BrandMark/><p>{error||'Retomando suas respostas…'}</p>{error&&<Button onClick={()=>{setError('');void load().catch(e=>setError(e.message));}}>Tentar novamente</Button>}</section>;
  const completed=interviewKeys.filter(k=>data.state.facts[k]).length;
  const optional=!essentialKeys.includes(data.step as typeof essentialKeys[number])&&data.step!=='identity';
  const canConfirm=missingEssentials(data.state.facts).length===0&&data.state.location_confirmed&&data.state.competitors_reviewed&&data.state.references_reviewed;
@@ -51,6 +52,7 @@ export function OnboardingChat({companyId,readOnly=false,summaryOnly=false,immer
  </>;
  const materials=<>{data.attachments.length>0&&<div className={styles.attachments}><strong>Materiais da empresa</strong>{data.attachments.map(a=><a key={a.id} href={'/api/onboarding/companies/'+companyId+'/attachments/'+a.id} target="_blank" rel="noreferrer"><Paperclip size={13}/>{a.name}</a>)}</div>}</>;
  const attachmentInput=<input type="file" multiple accept="image/png,image/jpeg,image/webp,application/pdf" disabled={busy||readOnly} aria-label="Anexar materiais da empresa" onChange={e=>{const files=Array.from(e.target.files??[]);if(files.length)void upload(files);e.target.value='';}}/>;
+ if(immersive)return <OnboardingQuestionnaire companyId={companyId} data={data} busy={busy} readOnly={readOnly} error={error} uploadProgress={uploadProgress} showSummary={showSummary} onSummary={setShowSummary} send={send} onSaved={value=>{setData(value);setText('');setError('');}} onExit={onExit} canConfirm={canConfirm} summary={<ProfileSummary facts={data.state.facts} disabled={busy||readOnly} onSave={(key,fact)=>send('Atualização de '+labels[key],'edit',{[key]:fact})}/>} materials={materials} attachmentInput={attachmentInput} tools={tools}/>;
  return <section ref={viewport} className={immersive?chat.immersive:styles.onboarding} aria-label="Conversa de cadastro com a Askadia">
   {immersive&&<aside className={chat.sidebar}>
    <Link href="/" className={chat.brand} aria-label="Askadia, início"><BrandWordmark/></Link>

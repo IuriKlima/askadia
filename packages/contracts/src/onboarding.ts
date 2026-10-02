@@ -1,19 +1,20 @@
 import { z } from 'zod';
-export const profileKeys=['name','city','businessType','address','services','audience','objective','structure','hours','offers','sales','history','budget','brand','channels','video','management','competitors','references','placeId','competitorPlaceIds'] as const;
+export const profileKeys=['name','postalCode','city','businessType','address','services','audience','objective','structure','hours','offers','sales','history','budget','brand','channels','video','management','competitors','references','placeId','competitorPlaceIds'] as const;
 export type ProfileKey=typeof profileKeys[number];
 export const factInputSchema=z.object({value:z.string().trim().max(6000).nullable(),status:z.enum(['provided','unknown','deferred'])}).strict().refine(f=>f.status!=='provided'||Boolean(f.value),'Informe o valor ou marque como desconhecido.');
 export type FactInput=z.infer<typeof factInputSchema>;
 export type ProfileFact=FactInput & {source:'user'|'existing'|'assistant_suggestion';updatedAt:string;actorId:string|null};
 export type ProfileFacts=Partial<Record<ProfileKey,ProfileFact>>;
-export const profilePatchSchema=z.partialRecord(z.enum(profileKeys),factInputSchema);
+export const profilePatchSchema=z.partialRecord(z.enum(profileKeys),factInputSchema).refine(p=>p.postalCode?.status!=='provided'||/^\d{5}-?\d{3}$/.test(p.postalCode.value??''),{message:'Informe um CEP válido com 8 dígitos.',path:['postalCode']});
 export const onboardingActions=['reply','confirm_location','review_competitors','review_references','edit','confirm','reopen'] as const;
 export const onboardingReplySchema=z.object({requestId:z.uuid(),revision:z.number().int().min(0),message:z.string().trim().min(1).max(6000),answers:profilePatchSchema.default({}),action:z.enum(onboardingActions).default('reply')}).strict();
 export const beginCompanySchema=z.object({requestId:z.uuid(),workspaceId:z.uuid().nullable().default(null)}).strict();
 export const interviewKeys=['services','audience','objective','structure','hours','offers','sales','history','budget','brand','channels','video','management'] as const;
 export const essentialKeys=['name','city','businessType','services','audience','objective'] as const;
-export const labels:Record<ProfileKey,string>={name:'Nome do negócio',city:'Cidade e região atendida',businessType:'Tipo de negócio',address:'Endereço',services:'Serviços e modalidades',audience:'Público desejado',objective:'Objetivo e capacidade',structure:'Estrutura e diferenciais',hours:'Horários e períodos ociosos',offers:'Planos, preços e condições',sales:'Processo comercial',history:'Histórico de marketing',budget:'Orçamento de anúncios',brand:'Identidade e materiais',channels:'Site e canais',video:'Produção de vídeos',management:'Sistema de gestão',competitors:'Concorrentes locais',references:'Referências de comunicação',placeId:'Local selecionado no Google',competitorPlaceIds:'Locais concorrentes selecionados'};
+export const labels:Record<ProfileKey,string>={name:'Nome do negócio',postalCode:'CEP da empresa',city:'Cidade e região atendida',businessType:'Tipo de negócio',address:'Endereço',services:'Serviços e modalidades',audience:'Público desejado',objective:'Objetivo e capacidade',structure:'Estrutura e diferenciais',hours:'Horários e períodos ociosos',offers:'Planos, preços e condições',sales:'Processo comercial',history:'Histórico de marketing',budget:'Orçamento de anúncios',brand:'Identidade e materiais',channels:'Site e canais',video:'Produção de vídeos',management:'Sistema de gestão',competitors:'Concorrentes locais',references:'Referências de comunicação',placeId:'Local selecionado no Google',competitorPlaceIds:'Locais concorrentes selecionados'};
 export const questions:Record<string,string>={
  identity:'Qual é o nome do negócio? Vamos começar pela sua academia.',
+ postalCode:'Qual é o CEP da sua empresa?',
  city:'Em qual cidade fica sua academia? Se puder, informe também o estado.',businessType:'Que tipo de negócio é o seu: academia, estúdio ou outra atividade?',
  location:'Vamos confirmar a localização da empresa. Informe o endereço ou a região atendida. Você pode conferir as opções no Google ou continuar manualmente.',
  competitors:'Agora vamos conhecer os concorrentes locais. Revise os resultados da pesquisa ou indique quem disputa o mesmo público na sua região.',
@@ -24,7 +25,7 @@ export type OnboardingState={company_id:string;revision:number;facts:ProfileFact
 export function onboardingStep(s:OnboardingState):string{
  if(s.confirmed_revision===s.revision)return 'complete';
  if(s.facts.name?.status!=='provided')return 'identity';
- if(s.facts.city?.status!=='provided')return 'city';
+ if(s.facts.city?.status!=='provided'&&s.facts.postalCode?.status!=='provided')return s.facts.postalCode?'city':'postalCode';
  if(!s.location_confirmed)return 'location';
  if(s.facts.businessType?.status!=='provided')return 'businessType';if(!s.competitors_reviewed)return 'competitors';if(!s.references_reviewed)return 'references';
  return interviewKeys.find(k=>!s.facts[k])??'review';
@@ -33,7 +34,7 @@ export function missingEssentials(facts:ProfileFacts){return essentialKeys.filte
 export type OnboardingMessage={id:string;role:'user'|'assistant';body:string;created_at:string;actor_id:string|null;request_id:string|null};
 export type OnboardingAttachment={id:string;company_id:string;name:string;mime:string;size:number;object_path:string;created_at:string};
 export type OnboardingSnapshot={state:OnboardingState;messages:OnboardingMessage[];attachments:OnboardingAttachment[];capabilities:{actions:string[]};confirmedProfile:{version:number;facts:ProfileFacts;confirmed_at:string}|null;provider:{mode:'guided'|'configured';message:string;aiAllowed?:boolean};step:string;question:string};
-export type PlaceOption={id:string;name:string;address:string;latitude:number|null;longitude:number|null;url:string;attributions:{displayName:string;uri:string}[];details?:PlaceDetails};
+export type PlaceOption={id:string;name:string;address:string;city?:string|null;postalCode?:string|null;latitude:number|null;longitude:number|null;url:string;attributions:{displayName:string;uri:string}[];details?:PlaceDetails};
 export type PlaceSearchResult={status:'available'|'unconfigured'|'unavailable';places:PlaceOption[];message:string;radius:number|null;center?:{latitude:number;longitude:number};mapKey?:string};
 
 // Conservative fallback: only explicit labelled facts or a clear name/city pair.

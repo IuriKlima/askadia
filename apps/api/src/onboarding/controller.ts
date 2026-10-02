@@ -28,8 +28,8 @@ export class OnboardingController {
   uuid(id);const input=parse(onboardingReplySchema,body);await capability(req.actor,id,'marketing.write');
   const current=await snapshot(req.actor,id);let answers=input.answers;let source='user';let providerMessage=current.provider.message;
   if(input.action==='reply'){
-   answers={...guidedAnswers(current.step,input.message),...answers};
-   if(current.provider.aiAllowed&&interpreterConfigured()&&current.state.revision===input.revision){
+   answers=Object.keys(input.answers).length?input.answers:guidedAnswers(current.step,input.message);
+   if(!Object.keys(input.answers).length&&current.provider.aiAllowed&&interpreterConfigured()&&current.state.revision===input.revision){
     const reserved=await reserve(req.actor,id,input.requestId,'interpretation');
     if(reserved){try{const interpreted=await interpret(current,input.message);answers={...answers,...interpreted.answers,...input.answers};source=Object.keys(interpreted.answers).length?'assistant_suggestion':'user';await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'interpretation',p_outcome:interpreted.outcome,p_usage:interpreted.usage});if(interpreted.outcome!=='completed')providerMessage='A IA não interpretou esta resposta. Ela foi salva pela conversa guiada.';}catch{providerMessage='A IA está indisponível. Sua resposta foi salva pela conversa guiada.';await req.actor.client.rpc('finish_onboarding_provider',{p_company_id:id,p_request_id:input.requestId,p_kind:'interpretation',p_outcome:'failed'});}}
     else providerMessage='Limite de interpretação por IA indisponível. Sua resposta foi salva pela conversa guiada.';
@@ -40,7 +40,7 @@ export class OnboardingController {
  }
  @Post('companies/:id/places') async search(@Req() req:AuthRequest,@Param('id') id:string,@Body() body:unknown):Promise<PlaceSearchResult>{
   uuid(id);const input=parse(z.object({requestId:z.uuid(),kind:z.enum(['location','competitors']),radius:z.number().int().min(500).max(20000).default(3000)}).strict(),body);await capability(req.actor,id,'marketing.write');const current=await snapshot(req.actor,id);
-  if(current.state.facts.name?.status!=='provided'||current.state.facts.city?.status!=='provided')throw new BadRequestException('Informe primeiro o nome da academia e a cidade.');
+  if(current.state.facts.name?.status!=='provided'||(current.state.facts.city?.status!=='provided'&&current.state.facts.postalCode?.status!=='provided'))throw new BadRequestException('Informe primeiro o nome da empresa e o CEP ou a cidade.');
   if(input.kind==='competitors'&&!current.state.location_confirmed)throw new BadRequestException('Confirme o local da academia antes de pesquisar os concorrentes.');
   const fallback={status:'unconfigured' as const,places:[],radius:null,message:'A pesquisa automática de endereços ainda não está ativada na Askadia. Abra o Google Maps para conferir o estabelecimento e informe o endereço na conversa.'};
   if(!process.env.GOOGLE_PLACES_SERVER_KEY)return fallback;

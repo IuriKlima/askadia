@@ -4,7 +4,7 @@ import {readFileSync,readdirSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {paidCompanyFixture} from './helpers/paid-company';
 import {GooglePlacesAdapter} from '../apps/api/src/onboarding/google-places';
-import {guidedAnswers,onboardingStep,type OnboardingSnapshot} from '../packages/contracts/src/onboarding';
+import {onboardingStep,profilePatchSchema,type OnboardingSnapshot} from '../packages/contracts/src/onboarding';
 let db:PGlite,company:string,second:string;const owner=randomUUID(),outsider=randomUUID(),reader=randomUUID();
 async function as(id:string){await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');}
 async function server(){await db.exec('reset role;set role service_role');}
@@ -26,9 +26,9 @@ describe('Persistent onboarding research',()=>{
  },120000);
  afterAll(async()=>{await db?.close();});
 
- it('asks name then city and searches location before asking business type',async()=>{
-  await as(owner);const initial=await scalar<{stages:{data:unknown}[]}>('select public.read_marketing_journey($1)',[company]);expect(Array.isArray(initial.stages[0]!.data)).toBe(true);expect((await read()).question).toContain('nome do negócio');const name=await save(guidedAnswers('identity','Minha Academia'));expect(name.step).toBe('city');expect(name.question).toContain('cidade');const city=await save(guidedAnswers('city','Varginha, MG'));expect(city.step).toBe('location');expect(onboardingStep(city.state)).toBe(city.step);
-  await save({placeId:fact('own_place'),businessType:fact('Academia'),address:fact('Centro, Varginha')},'confirm_location');
+ it('asks name then CEP and confirms the Google location',async()=>{
+  await as(owner);const initial=await scalar<{stages:{data:unknown}[]}>('select public.read_marketing_journey($1)',[company]);expect(Array.isArray(initial.stages[0]!.data)).toBe(true);expect((await read()).question).toContain('nome do negócio');const name=await save({name:fact('Minha Academia')});expect(name.step).toBe('postalCode');expect(onboardingStep(name.state)).toBe('postalCode');await expect(save({postalCode:fact('123')})).rejects.toThrow('Invalid postal code');const manual=await save({postalCode:{value:null,status:'unknown'}});expect(manual.step).toBe('city');const postal=await save({postalCode:fact('37002-000')});expect(postal.step).toBe('location');expect(onboardingStep(postal.state)).toBe('location');expect((await read()).state.facts.postalCode?.value).toBe('37002-000');
+  const confirmed=await save({placeId:fact('own_place'),postalCode:fact('37002-111'),city:fact('Varginha, MG'),businessType:fact('Academia'),address:fact('Centro, Varginha')},'confirm_location');expect(confirmed.state.location_confirmed).toBe(true);expect(confirmed.state.facts.postalCode?.value).toBe('37002-111');
  });
  it('persists confirmed competitor names and place IDs atomically, with replay and stale-write protection',async()=>{
   const revision=(await read()).state.revision,request=randomUUID();const saved=await review(selections,request,revision);expect(saved.step).toBe('references');expect(saved.state.facts.competitors?.value).toBe('Academia vizinha\nEstúdio local');expect(await review([],request,revision)).toEqual(saved);await expect(review([],randomUUID(),revision)).rejects.toThrow('Profile changed');
@@ -58,7 +58,7 @@ describe('Persistent onboarding research',()=>{
   await scalar('select public.select_competitor_instagram($1,$2,$3)',[company,'near_one','outra.vizinha']);const journey=await scalar<{stages:{approved:boolean}[]}>('select public.read_marketing_journey($1)',[company]);expect(journey.stages[0]!.approved).toBe(false);expect(await scalar('select username from public.company_instagram_watches where company_id=$1',[company])).toBe('outra.vizinha');await scalar('select public.select_competitor_instagram($1,$2,$3,true)',[company,'near_one','outra.vizinha']);expect(await scalar("select selected_username from public.company_competitor_research where company_id=$1 and place_id='near_one'",[company])).toBeNull();
  });
  it('rejects late results after a location correction and preserves the new profile',async()=>{
-  await server();const job=(await claim())!;expect(job.query).toBe('Estúdio local');await as(owner);await save({city:fact('Outra cidade')},'edit');await server();expect(await scalar('select public.finish_competitor_research_server($1,$2,$3)',[job.id,job.token,[candidate]])).toBe(false);await as(owner);expect(await scalar('select count(*)::int from public.company_competitor_research where company_id=$1 and status=\'stale\'',[company])).toBe(2);const corrected=await read();expect(corrected.state.facts.city?.value).toBe('Outra cidade');expect(corrected.state.facts.placeId).toBeUndefined();expect(corrected.state.facts.competitorPlaceIds).toBeUndefined();expect(corrected.state.location_confirmed).toBe(false);
+  await server();const job=(await claim())!;expect(job.query).toBe('Estúdio local');await as(owner);await save({postalCode:fact('01310-100')},'edit');await server();expect(await scalar('select public.finish_competitor_research_server($1,$2,$3)',[job.id,job.token,[candidate]])).toBe(false);await as(owner);expect(await scalar('select count(*)::int from public.company_competitor_research where company_id=$1 and status=\'stale\'',[company])).toBe(2);const corrected=await read();expect(corrected.state.facts.postalCode?.value).toBe('01310-100');expect(corrected.state.facts.city).toBeUndefined();expect(corrected.state.facts.placeId).toBeUndefined();expect(corrected.state.facts.competitorPlaceIds).toBeUndefined();expect(corrected.state.location_confirmed).toBe(false);
  });
 });
 
@@ -70,12 +70,33 @@ describe('Google Places adapter',()=>{
   const transport=vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({places:[own]})));const found=await new GooglePlacesAdapter('private-key',transport).search(snapshot,'location',3000);expect(found.places[0]?.details).toMatchObject({phone:own.nationalPhoneNumber,hours:['Segunda: 06:00–22:00'],rating:4.7,reviewCount:20,businessType:'Academia'});const [url,init]=transport.mock.calls[0]!;expect(url).toBe('https://places.googleapis.com/v1/places:searchText');expect(JSON.parse(String(init?.body)).textQuery).toBe('Minha academia Varginha');expect(init?.headers).toMatchObject({'X-Goog-FieldMask':expect.stringContaining('places.websiteUri')});expect(JSON.stringify(found)).not.toContain('private-key');
  });
  it('enforces radius, removes the business, closed locations and duplicates but keeps other branches',async()=>{
-  const near={...own,id:'near_one',location:{latitude:-21.551,longitude:-45.43}};const transport=vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(JSON.stringify(own))).mockResolvedValueOnce(new Response(JSON.stringify({places:[own,near,near,{...near,id:'far_away',location:{latitude:0,longitude:0}},{...near,id:'closed_place',businessStatus:'CLOSED_PERMANENTLY'},{...near,id:'no_location',location:undefined}]})));const found=await new GooglePlacesAdapter('fixture',transport).search(snapshot,'competitors',1000);expect(found.places.map(p=>p.id)).toEqual(['near_one']);expect(found.radius).toBe(1000);
+  const near={...own,id:'near_one',location:{latitude:-21.551,longitude:-45.43}};const transport=vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(JSON.stringify(own))).mockResolvedValueOnce(new Response(JSON.stringify({places:[own,near,near,{...near,id:'far_away',location:{latitude:0,longitude:0}},{...near,id:'closed_place',businessStatus:'CLOSED_PERMANENTLY'},{...near,id:'no_location',location:undefined}]})));const found=await new GooglePlacesAdapter('fixture',transport).search(snapshot,'competitors',1000);expect(found.places.map(p=>p.id)).toEqual(['near_one']);expect(found.radius).toBe(1000);expect(JSON.parse(String(transport.mock.calls[1]![1]?.body))).toMatchObject({textQuery:'Academia',rankPreference:'DISTANCE'});
  });
  it('does not turn missing metrics into zero or unsafe URLs into links',async()=>{
   const transport=vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({places:[{id:'valid_id',displayName:{text:'Teste'},websiteUri:'javascript:alert(1)',googleMapsUri:'https://user:pass@example.test'}]})));const found=await new GooglePlacesAdapter('fixture',transport).search(snapshot,'location',3000);expect(found.places[0]?.details).toMatchObject({rating:null,reviewCount:null,website:null,phone:null});expect(found.places[0]?.url).toContain('https://www.google.com/maps/search/');
  });
  it('fails explicitly when the selected location cannot be loaded, without widening the search',async()=>{
   const transport=vi.fn<typeof fetch>().mockResolvedValue(new Response('{}',{status:403}));await expect(new GooglePlacesAdapter('fixture',transport).search(snapshot,'competitors',1000)).rejects.toThrow('unavailable');expect(transport).toHaveBeenCalledTimes(1);
+ });
+});
+
+describe('CEP onboarding',()=>{
+ it('validates CEP and allows manual fallback',()=>{
+  expect(profilePatchSchema.safeParse({postalCode:fact('37002-000')}).success).toBe(true);
+  expect(profilePatchSchema.safeParse({postalCode:fact('37002000')}).success).toBe(true);
+  expect(profilePatchSchema.safeParse({postalCode:fact('abc37002000')}).success).toBe(false);
+  expect(profilePatchSchema.safeParse({postalCode:{value:null,status:'unknown'}}).success).toBe(true);
+ });
+ it('asks city when CEP is unknown, keeps legacy flow and confirmed profiles',()=>{
+  const state={revision:1,confirmed_revision:null,location_confirmed:false,competitors_reviewed:false,references_reviewed:false,facts:{name:fact('Teste'),postalCode:{value:null,status:'unknown'}}} as OnboardingSnapshot['state'];
+  expect(onboardingStep(state)).toBe('city');
+  expect(onboardingStep({...state,facts:{name:fact('Teste'),city:fact('Varginha')}} as typeof state)).toBe('location');
+  expect(onboardingStep({...state,confirmed_revision:1})).toBe('complete');
+ });
+ it('searches Google with name and CEP and exposes municipality for confirmation',async()=>{
+  const transport=vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({places:[{id:'own_place',displayName:{text:'Minha academia'},formattedAddress:'Centro',location:{latitude:-21.55,longitude:-45.43},addressComponents:[{longText:'Varginha',types:['administrative_area_level_2']},{longText:'Minas Gerais',shortText:'MG',types:['administrative_area_level_1']},{longText:'37002-000',types:['postal_code']}]}]})));
+  const found=await new GooglePlacesAdapter('fixture',transport).search({state:{facts:{name:fact('Minha academia'),postalCode:fact('37002-000')}}} as OnboardingSnapshot,'location',3000);
+  expect(JSON.parse(String(transport.mock.calls[0]![1]?.body)).textQuery).toBe('Minha academia 37002-000 Brasil');
+  expect(found.places[0]).toMatchObject({city:'Varginha, MG',postalCode:'37002-000'});
  });
 });
